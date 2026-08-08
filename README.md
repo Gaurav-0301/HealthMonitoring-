@@ -13,3 +13,30 @@ mern - mongodb express react node
 - subscription plans
 
 still building this, more updates soon
+
+## how to run
+
+backend:
+```
+cd backend
+npm install
+cp .env.example .env
+# fill in your mongo uri n twilio keys in .env
+npm run dev
+```
+
+frontend:
+```
+cd frontend
+npm install
+npm start
+```
+
+## todo
+- [ ] finish google fit api response parsing (its messy)
+- [ ] add twilio voice call integration for step 1 of escalation
+- [ ] apple health integration for ios users
+- [ ] volunteer app screens
+- [ ] payment integration (razorpay probably)
+- [ ] medical history checklist ui
+- [ ] admin panel for verifying volunteers
