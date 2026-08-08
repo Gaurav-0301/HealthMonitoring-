@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
 import { Zap, Heart, Activity, AlertTriangle, PhoneCall, MessageSquare, Send, CheckCircle, RefreshCw, UserCheck, Shield } from 'lucide-react';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from 'recharts';
 
 const VitalsControlRoom = () => {
   const { user, login } = useContext(AuthContext);
@@ -39,6 +40,85 @@ const VitalsControlRoom = () => {
   useEffect(() => {
     fetchElders();
   }, []);
+
+  // Preset Sensor Value Preset Mapping
+  const applyPresetValues = (presetId) => {
+    setSelectedPreset(presetId);
+    switch (presetId) {
+      case 'healthy':
+        setHeartRate(72); setRestingHeartRate(58); setHeartRateSd(6); setSpo2Avg(98); setSpo2Min(96); setSkinTemp(33.6); setSteps(9500); setSleepHours(7.5); setSleepEfficiency(88);
+        break;
+      case 'cardiac':
+        setHeartRate(118); setRestingHeartRate(96); setHeartRateSd(16); setSpo2Avg(97); setSpo2Min(95); setSkinTemp(33.7); setSteps(6000); setSleepHours(7.0); setSleepEfficiency(85);
+        break;
+      case 'respiratory':
+        setHeartRate(78); setRestingHeartRate(64); setHeartRateSd(6); setSpo2Avg(89); setSpo2Min(87); setSkinTemp(33.8); setSteps(4200); setSleepHours(6.5); setSleepEfficiency(85);
+        break;
+      case 'fever':
+        setHeartRate(105); setRestingHeartRate(90); setHeartRateSd(8); setSpo2Avg(95); setSpo2Min(93); setSkinTemp(36.8); setSteps(1800); setSleepHours(5.0); setSleepEfficiency(70);
+        break;
+      case 'stress':
+        setHeartRate(85); setRestingHeartRate(72); setHeartRateSd(3); setSpo2Avg(96); setSpo2Min(94); setSkinTemp(34.0); setSteps(2500); setSleepHours(4.5); setSleepEfficiency(65);
+        break;
+      case 'metabolic':
+        setHeartRate(82); setRestingHeartRate(75); setHeartRateSd(7); setSpo2Avg(97); setSpo2Min(95); setSkinTemp(33.8); setSteps(1800); setSleepHours(5.5); setSleepEfficiency(75);
+        break;
+      case 'worst_case':
+        setHeartRate(128); setRestingHeartRate(98); setHeartRateSd(17); setSpo2Avg(88); setSpo2Min(85); setSkinTemp(37.4); setSteps(800); setSleepHours(4.0); setSleepEfficiency(60);
+        break;
+      default:
+        break;
+    }
+  };
+
+  // Real-time Dynamic Risk Calculation for Live Graph Fluctuation
+  const calculateLiveRisks = () => {
+    let c = 0.003, r = 0.008, f = 0.017, s = 0.027, m = 0.000;
+
+    const hr = Number(heartRate);
+    const rhr = Number(restingHeartRate);
+    const hrv = Number(heartRateSd);
+    const spo2a = Number(spo2Avg);
+    const spo2m = Number(spo2Min);
+    const temp = Number(skinTemp);
+    const st = Number(steps);
+    const sleep = Number(sleepHours);
+    const eff = Number(sleepEfficiency);
+
+    if (rhr > 78) c += (rhr - 78) * 0.035;
+    if (hrv > 10) c += (hrv - 10) * 0.045;
+    if (hr > 100) c += (hr - 100) * 0.015;
+    if (hr < 50) c += (50 - hr) * 0.025;
+    c = Math.min(0.98, Math.max(0.003, c));
+
+    if (spo2m < 94) r += (94 - spo2m) * 0.085;
+    if (spo2a < 96) r += (96 - spo2a) * 0.055;
+    r = Math.min(0.98, Math.max(0.008, r));
+
+    if (temp > 34.0) f += (temp - 34.0) * 0.28;
+    if (rhr > 80) f += (rhr - 80) * 0.012;
+    f = Math.min(0.98, Math.max(0.017, f));
+
+    if (hrv < 5) s += (5 - hrv) * 0.16;
+    if (sleep < 6) s += (6 - sleep) * 0.12;
+    if (eff < 75) s += (75 - eff) * 0.008;
+    s = Math.min(0.98, Math.max(0.027, s));
+
+    if (st < 3000) m += (3000 - st) * 0.00024;
+    if (sleep < 6.5) m += (6.5 - sleep) * 0.095;
+    if (rhr > 72) m += (rhr - 72) * 0.008;
+    m = Math.min(0.98, Math.max(0.001, m));
+
+    return [
+      { name: 'Cardiac', risk: Math.round(c * 100), color: c >= 0.70 ? '#ef4444' : c >= 0.40 ? '#f59e0b' : '#10b981' },
+      { name: 'Respiratory', risk: Math.round(r * 100), color: r >= 0.70 ? '#ef4444' : r >= 0.40 ? '#f59e0b' : '#8b5cf6' },
+      { name: 'Fever', risk: Math.round(f * 100), color: f >= 0.70 ? '#ef4444' : f >= 0.40 ? '#f59e0b' : '#e11d48' },
+      { name: 'Stress', risk: Math.round(s * 100), color: s >= 0.70 ? '#ef4444' : s >= 0.40 ? '#f59e0b' : '#3b82f6' },
+      { name: 'Metabolic', risk: Math.round(m * 100), color: m >= 0.70 ? '#ef4444' : m >= 0.40 ? '#f59e0b' : '#06b6d4' }
+    ];
+  };
+
+  const liveRiskData = calculateLiveRisks();
 
   const handleQuickLogin = async (email, roleLabel) => {
     try {
@@ -150,15 +230,15 @@ const VitalsControlRoom = () => {
   };
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '1rem auto' }}>
+    <div style={{ maxWidth: '1250px', margin: '1rem auto' }}>
       {/* Header */}
       <div className="page-header">
         <div>
           <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <Zap color="var(--accent-cyan)" size={28} /> Vitals Control Room & Emergency Trigger Simulator
+            <Zap color="var(--accent-cyan)" size={28} /> Vitals Control Room & Active Emergency Trigger Simulator
           </h1>
           <p className="page-subtitle">
-            Manipulate 9 live band sensor sliders, select preset radio scenarios, and test real-time ML risk screening & parallel escalation.
+            Manipulate 9 live band sensor sliders in real-time. Watch the disease risk graph fluctuate live and trigger active Twilio SMS/IVR dispatches.
           </p>
         </div>
 
@@ -210,7 +290,7 @@ const VitalsControlRoom = () => {
       {/* SECTION 2: RADIO BUTTON PRESET SCENARIOS */}
       <div className="glass-card" style={{ marginBottom: '1.5rem' }}>
         <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          🔘 Instant Smartwatch Simulation Scenarios (Radio Button Cards):
+          🔘 Instant Smartwatch Simulation Scenarios (Radio Cards):
         </h3>
         <div className="radio-card-grid">
           {[
@@ -220,9 +300,7 @@ const VitalsControlRoom = () => {
             { id: 'fever', title: '🌡️ Fever / Infection', desc: '82.2% Fever Spike (Temp 36.8°C, HR 105)' },
             { id: 'stress', title: '🧠 Stress / Fatigue', desc: '87.3% Stress Spike (HRV 3ms, 4.5h Sleep)' },
             { id: 'metabolic', title: '🍏 Metabolic / Lifestyle', desc: '73.8% Metabolic Spike (1800 Steps)' },
-            { id: 'worst_case', title: '🚨 Worst-Case Multi-Risk', desc: 'Multi-organ risk spike (128 BPM, 37.4°C)' },
-            { id: 'spike_3_readings', title: '⚡ Anomaly Escalation', desc: '3 Consecutive Heart Rate Spikes' },
-            { id: 'inactivity_4h', title: '📴 Daytime Inactivity', desc: '4-Hour Continuous Zero Movement' }
+            { id: 'worst_case', title: '🚨 Worst-Case Multi-Risk', desc: 'Multi-organ risk spike (128 BPM, 37.4°C)' }
           ].map(p => (
             <label key={p.id} className={`radio-card ${selectedPreset === p.id ? 'selected' : ''}`}>
               <input
@@ -231,7 +309,7 @@ const VitalsControlRoom = () => {
                 value={p.id}
                 checked={selectedPreset === p.id}
                 onChange={() => {
-                  setSelectedPreset(p.id);
+                  applyPresetValues(p.id);
                   handleSimulateVitals(p.id);
                 }}
               />
@@ -242,260 +320,338 @@ const VitalsControlRoom = () => {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1.5rem' }}>
-        {/* LEFT COLUMN: All 9 Band Sensor Range Sliders */}
-        <div className="glass-card">
-          <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Activity color="var(--primary)" /> Smartwatch 9-Sensor Telemetry Controls (Demo Range Buttons)
-          </h3>
+      {/* LIVE FLUCTUATING RISK GRAPH CARD */}
+      <div className="glass-card" style={{ marginBottom: '1.5rem', background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)', border: '1px solid #cbd5e1' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <div>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-primary)' }}>
+              📈 Live Fluctuating Risk Screening Graph (Responds in Real-Time to Range Sliders)
+            </h3>
+            <p style={{ fontSize: '0.83rem', color: 'var(--text-secondary)', margin: '2px 0 0' }}>
+              Slide any of the 9 telemetry range controls below to see instant risk probability fluctuations!
+            </p>
+          </div>
+          {liveRiskData.some(d => d.risk >= 70) && (
+            <span style={{ background: '#ef4444', color: '#fff', fontSize: '0.8rem', fontWeight: 800, padding: '4px 10px', borderRadius: '20px', animation: 'pulse 1.5s infinite' }}>
+              🚨 SPIKE DETECTED (&gt; 70%)
+            </span>
+          )}
+        </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
-            {/* 1. Heart Rate Slider */}
-            <div className="sensor-slider-card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                <label style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Heart size={16} color="#f43f5e" /> 1. Heart Rate (Instant)
-                </label>
-                <span style={{ fontWeight: 800, color: heartRate > 95 || heartRate < 60 ? '#ef4444' : '#10b981', fontSize: '1.1rem', fontFamily: 'var(--font-mono)' }}>
-                  {heartRate} BPM
-                </span>
-              </div>
-              <input
-                type="range"
-                min="40"
-                max="200"
-                value={heartRate}
-                onChange={(e) => { setSelectedPreset(''); setHeartRate(e.target.value); }}
-                style={{ width: '100%', accentColor: heartRate > 95 ? '#ef4444' : '#10b981', cursor: 'pointer' }}
-              />
+        <div style={{ width: '100%', height: 220 }}>
+          <ResponsiveContainer>
+            <BarChart data={liveRiskData}>
+              <XAxis dataKey="name" stroke="#64748b" style={{ fontSize: '0.85rem', fontWeight: 700 }} />
+              <YAxis domain={[0, 100]} stroke="#64748b" style={{ fontSize: '0.75rem' }} unit="%" />
+              <Tooltip formatter={(value) => [`${value}% Probability`, 'Risk Level']} contentStyle={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', color: '#fff' }} />
+              <Bar dataKey="risk" radius={[6, 6, 0, 0]}>
+                {liveRiskData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* SECTION 3: CENTRALIZED 9-SENSOR RANGE CONTROLS GRID */}
+      <div className="glass-card" style={{ marginBottom: '1.5rem' }}>
+        <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '1.25rem', textAlign: 'center', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+          <Activity color="var(--primary)" /> Centralized 9-Sensor Telemetry Controls (Fluctuating Range Sliders)
+        </h3>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem', marginBottom: '1.5rem' }}>
+          {/* 1. Heart Rate Slider */}
+          <div className="sensor-slider-card" style={{ textAlign: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <label style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <Heart size={16} color="#f43f5e" /> 1. Heart Rate
+              </label>
+              <span style={{ fontWeight: 800, color: heartRate > 95 || heartRate < 60 ? '#ef4444' : '#10b981', fontSize: '1.15rem', fontFamily: 'var(--font-mono)' }}>
+                {heartRate} BPM
+              </span>
             </div>
-
-            {/* 2. Resting Heart Rate Slider */}
-            <div className="sensor-slider-card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                <label style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a' }}>
-                  ❤️ 2. Resting Heart Rate
-                </label>
-                <span style={{ fontWeight: 800, color: restingHeartRate > 85 ? '#f59e0b' : '#0f172a', fontSize: '1.1rem', fontFamily: 'var(--font-mono)' }}>
-                  {restingHeartRate} BPM
-                </span>
-              </div>
-              <input
-                type="range"
-                min="40"
-                max="120"
-                value={restingHeartRate}
-                onChange={(e) => { setSelectedPreset(''); setRestingHeartRate(e.target.value); }}
-                style={{ width: '100%', accentColor: '#3b82f6', cursor: 'pointer' }}
-              />
-            </div>
-
-            {/* 3. Heart Rate SD (HRV) Slider */}
-            <div className="sensor-slider-card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                <label style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a' }}>
-                  📈 3. HR SD (Variability)
-                </label>
-                <span style={{ fontWeight: 800, color: heartRateSd < 4 || heartRateSd > 12 ? '#f59e0b' : '#0f172a', fontSize: '1.1rem', fontFamily: 'var(--font-mono)' }}>
-                  {heartRateSd} ms
-                </span>
-              </div>
-              <input
-                type="range"
-                min="1"
-                max="40"
-                value={heartRateSd}
-                onChange={(e) => { setSelectedPreset(''); setHeartRateSd(e.target.value); }}
-                style={{ width: '100%', accentColor: '#8b5cf6', cursor: 'pointer' }}
-              />
-            </div>
-
-            {/* 4. SpO2 Avg Slider */}
-            <div className="sensor-slider-card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                <label style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a' }}>
-                  🫁 4. SpO2 Average
-                </label>
-                <span style={{ fontWeight: 800, color: spo2Avg < 94 ? '#ef4444' : '#10b981', fontSize: '1.1rem', fontFamily: 'var(--font-mono)' }}>
-                  {spo2Avg}%
-                </span>
-              </div>
-              <input
-                type="range"
-                min="70"
-                max="100"
-                value={spo2Avg}
-                onChange={(e) => { setSelectedPreset(''); setSpo2Avg(e.target.value); }}
-                style={{ width: '100%', accentColor: spo2Avg < 94 ? '#ef4444' : '#10b981', cursor: 'pointer' }}
-              />
-            </div>
-
-            {/* 5. SpO2 Min Slider */}
-            <div className="sensor-slider-card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                <label style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a' }}>
-                  🩸 5. SpO2 Minimum Drop
-                </label>
-                <span style={{ fontWeight: 800, color: spo2Min < 92 ? '#ef4444' : '#10b981', fontSize: '1.1rem', fontFamily: 'var(--font-mono)' }}>
-                  {spo2Min}%
-                </span>
-              </div>
-              <input
-                type="range"
-                min="60"
-                max="100"
-                value={spo2Min}
-                onChange={(e) => { setSelectedPreset(''); setSpo2Min(e.target.value); }}
-                style={{ width: '100%', accentColor: spo2Min < 92 ? '#ef4444' : '#0284c7', cursor: 'pointer' }}
-              />
-            </div>
-
-            {/* 6. Skin Temperature Slider */}
-            <div className="sensor-slider-card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                <label style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a' }}>
-                  🌡️ 6. Skin Temperature
-                </label>
-                <span style={{ fontWeight: 800, color: skinTemp > 36.2 ? '#ef4444' : '#0f172a', fontSize: '1.1rem', fontFamily: 'var(--font-mono)' }}>
-                  {skinTemp} °C
-                </span>
-              </div>
-              <input
-                type="range"
-                min="32.0"
-                max="41.0"
-                step="0.1"
-                value={skinTemp}
-                onChange={(e) => { setSelectedPreset(''); setSkinTemp(e.target.value); }}
-                style={{ width: '100%', accentColor: skinTemp > 36.2 ? '#ef4444' : '#e11d48', cursor: 'pointer' }}
-              />
-            </div>
-
-            {/* 7. Steps Today Slider */}
-            <div className="sensor-slider-card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                <label style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a' }}>
-                  👟 7. Steps Today
-                </label>
-                <span style={{ fontWeight: 800, color: '#06b6d4', fontSize: '1.1rem', fontFamily: 'var(--font-mono)' }}>
-                  {steps} steps
-                </span>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="20000"
-                step="100"
-                value={steps}
-                onChange={(e) => { setSelectedPreset(''); setSteps(e.target.value); }}
-                style={{ width: '100%', accentColor: '#06b6d4', cursor: 'pointer' }}
-              />
-            </div>
-
-            {/* 8. Sleep Hours Slider */}
-            <div className="sensor-slider-card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                <label style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a' }}>
-                  🌙 8. Sleep Duration
-                </label>
-                <span style={{ fontWeight: 800, color: sleepHours < 5.5 ? '#f59e0b' : '#0f172a', fontSize: '1.1rem', fontFamily: 'var(--font-mono)' }}>
-                  {sleepHours} hrs
-                </span>
-              </div>
-              <input
-                type="range"
-                min="0.0"
-                max="14.0"
-                step="0.5"
-                value={sleepHours}
-                onChange={(e) => { setSelectedPreset(''); setSleepHours(e.target.value); }}
-                style={{ width: '100%', accentColor: '#7e22ce', cursor: 'pointer' }}
-              />
-            </div>
-
-            {/* 9. Sleep Efficiency Slider */}
-            <div className="sensor-slider-card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                <label style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a' }}>
-                  ⚡ 9. Sleep Efficiency
-                </label>
-                <span style={{ fontWeight: 800, color: sleepEfficiency < 70 ? '#f59e0b' : '#10b981', fontSize: '1.1rem', fontFamily: 'var(--font-mono)' }}>
-                  {sleepEfficiency}%
-                </span>
-              </div>
-              <input
-                type="range"
-                min="30"
-                max="100"
-                value={sleepEfficiency}
-                onChange={(e) => { setSelectedPreset(''); setSleepEfficiency(e.target.value); }}
-                style={{ width: '100%', accentColor: '#10b981', cursor: 'pointer' }}
-              />
+            <input
+              type="range"
+              min="40"
+              max="200"
+              value={heartRate}
+              onChange={(e) => { setSelectedPreset(''); setHeartRate(e.target.value); }}
+              style={{ width: '100%', accentColor: heartRate > 95 ? '#ef4444' : '#10b981', cursor: 'pointer' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+              <span>40 BPM (Low)</span>
+              <span>65-95 (Normal)</span>
+              <span>200 (Critical)</span>
             </div>
           </div>
 
-          <button
-            className="btn btn-primary"
-            disabled={loading}
-            onClick={() => handleSimulateVitals(null)}
-            style={{ width: '100%', padding: '0.75rem', fontSize: '0.95rem', fontWeight: 800 }}
-          >
-            <Send size={18} style={{ display: 'inline', marginRight: '6px' }} /> Ingest Live Telemetry Stream ({heartRate} BPM, {spo2Avg}% SpO2, {skinTemp}°C)
-          </button>
+          {/* 2. Resting Heart Rate Slider */}
+          <div className="sensor-slider-card" style={{ textAlign: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <label style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a' }}>
+                ❤️ 2. Resting HR
+              </label>
+              <span style={{ fontWeight: 800, color: restingHeartRate > 85 ? '#f59e0b' : '#0f172a', fontSize: '1.15rem', fontFamily: 'var(--font-mono)' }}>
+                {restingHeartRate} BPM
+              </span>
+            </div>
+            <input
+              type="range"
+              min="40"
+              max="120"
+              value={restingHeartRate}
+              onChange={(e) => { setSelectedPreset(''); setRestingHeartRate(e.target.value); }}
+              style={{ width: '100%', accentColor: '#3b82f6', cursor: 'pointer' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+              <span>40 BPM</span>
+              <span>55-75 (Baseline)</span>
+              <span>120 BPM</span>
+            </div>
+          </div>
+
+          {/* 3. Heart Rate SD (HRV) Slider */}
+          <div className="sensor-slider-card" style={{ textAlign: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <label style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a' }}>
+                📈 3. HR SD (Variability)
+              </label>
+              <span style={{ fontWeight: 800, color: heartRateSd < 4 || heartRateSd > 12 ? '#f59e0b' : '#0f172a', fontSize: '1.15rem', fontFamily: 'var(--font-mono)' }}>
+                {heartRateSd} ms
+              </span>
+            </div>
+            <input
+              type="range"
+              min="1"
+              max="40"
+              value={heartRateSd}
+              onChange={(e) => { setSelectedPreset(''); setHeartRateSd(e.target.value); }}
+              style={{ width: '100%', accentColor: '#8b5cf6', cursor: 'pointer' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+              <span>1 ms (Stress)</span>
+              <span>5-10 (Normal)</span>
+              <span>40 ms</span>
+            </div>
+          </div>
+
+          {/* 4. SpO2 Avg Slider */}
+          <div className="sensor-slider-card" style={{ textAlign: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <label style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a' }}>
+                🫁 4. SpO2 Average
+              </label>
+              <span style={{ fontWeight: 800, color: spo2Avg < 94 ? '#ef4444' : '#10b981', fontSize: '1.15rem', fontFamily: 'var(--font-mono)' }}>
+                {spo2Avg}%
+              </span>
+            </div>
+            <input
+              type="range"
+              min="70"
+              max="100"
+              value={spo2Avg}
+              onChange={(e) => { setSelectedPreset(''); setSpo2Avg(e.target.value); }}
+              style={{ width: '100%', accentColor: spo2Avg < 94 ? '#ef4444' : '#10b981', cursor: 'pointer' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+              <span>70% (Hypoxia)</span>
+              <span>95-100% (Healthy)</span>
+              <span>100%</span>
+            </div>
+          </div>
+
+          {/* 5. SpO2 Min Slider */}
+          <div className="sensor-slider-card" style={{ textAlign: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <label style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a' }}>
+                🩸 5. SpO2 Minimum
+              </label>
+              <span style={{ fontWeight: 800, color: spo2Min < 92 ? '#ef4444' : '#10b981', fontSize: '1.15rem', fontFamily: 'var(--font-mono)' }}>
+                {spo2Min}%
+              </span>
+            </div>
+            <input
+              type="range"
+              min="60"
+              max="100"
+              value={spo2Min}
+              onChange={(e) => { setSelectedPreset(''); setSpo2Min(e.target.value); }}
+              style={{ width: '100%', accentColor: spo2Min < 92 ? '#ef4444' : '#0284c7', cursor: 'pointer' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+              <span>60% (Severe)</span>
+              <span>92-100% (Normal)</span>
+              <span>100%</span>
+            </div>
+          </div>
+
+          {/* 6. Skin Temperature Slider */}
+          <div className="sensor-slider-card" style={{ textAlign: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <label style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a' }}>
+                🌡️ 6. Skin Temperature
+              </label>
+              <span style={{ fontWeight: 800, color: skinTemp > 36.2 ? '#ef4444' : '#0f172a', fontSize: '1.15rem', fontFamily: 'var(--font-mono)' }}>
+                {skinTemp} °C
+              </span>
+            </div>
+            <input
+              type="range"
+              min="32.0"
+              max="41.0"
+              step="0.1"
+              value={skinTemp}
+              onChange={(e) => { setSelectedPreset(''); setSkinTemp(e.target.value); }}
+              style={{ width: '100%', accentColor: skinTemp > 36.2 ? '#ef4444' : '#e11d48', cursor: 'pointer' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+              <span>32.0°C</span>
+              <span>33.4-34.5 (Normal)</span>
+              <span>41.0°C (Fever)</span>
+            </div>
+          </div>
+
+          {/* 7. Steps Today Slider */}
+          <div className="sensor-slider-card" style={{ textAlign: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <label style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a' }}>
+                👟 7. Steps Today
+              </label>
+              <span style={{ fontWeight: 800, color: '#06b6d4', fontSize: '1.15rem', fontFamily: 'var(--font-mono)' }}>
+                {steps} steps
+              </span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="20000"
+              step="100"
+              value={steps}
+              onChange={(e) => { setSelectedPreset(''); setSteps(e.target.value); }}
+              style={{ width: '100%', accentColor: '#06b6d4', cursor: 'pointer' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+              <span>0 (Sedentary)</span>
+              <span>5,000+ (Active)</span>
+              <span>20,000</span>
+            </div>
+          </div>
+
+          {/* 8. Sleep Hours Slider */}
+          <div className="sensor-slider-card" style={{ textAlign: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <label style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a' }}>
+                🌙 8. Sleep Duration
+              </label>
+              <span style={{ fontWeight: 800, color: sleepHours < 5.5 ? '#f59e0b' : '#0f172a', fontSize: '1.15rem', fontFamily: 'var(--font-mono)' }}>
+                {sleepHours} hrs
+              </span>
+            </div>
+            <input
+              type="range"
+              min="0.0"
+              max="14.0"
+              step="0.5"
+              value={sleepHours}
+              onChange={(e) => { setSelectedPreset(''); setSleepHours(e.target.value); }}
+              style={{ width: '100%', accentColor: '#7e22ce', cursor: 'pointer' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+              <span>0 hrs</span>
+              <span>7-9 hrs (Healthy)</span>
+              <span>14 hrs</span>
+            </div>
+          </div>
+
+          {/* 9. Sleep Efficiency Slider */}
+          <div className="sensor-slider-card" style={{ textAlign: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <label style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a' }}>
+                ⚡ 9. Sleep Efficiency
+              </label>
+              <span style={{ fontWeight: 800, color: sleepEfficiency < 70 ? '#f59e0b' : '#10b981', fontSize: '1.15rem', fontFamily: 'var(--font-mono)' }}>
+                {sleepEfficiency}%
+              </span>
+            </div>
+            <input
+              type="range"
+              min="30"
+              max="100"
+              value={sleepEfficiency}
+              onChange={(e) => { setSelectedPreset(''); setSleepEfficiency(e.target.value); }}
+              style={{ width: '100%', accentColor: '#10b981', cursor: 'pointer' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+              <span>30% (Restless)</span>
+              <span>85%+ (Restful)</span>
+              <span>100%</span>
+            </div>
+          </div>
         </div>
 
-        {/* RIGHT COLUMN: Live Communication Dispatch Log */}
-        <div className="glass-card">
-          <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <MessageSquare color="var(--accent-cyan)" /> Live Outbound Communication Dispatch Log
-          </h3>
-
-          {dispatchLog.length === 0 ? (
-            <div style={{ padding: '3rem 1.5rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-              <Send size={32} style={{ margin: '0 auto 0.75rem', opacity: 0.4 }} />
-              <p>No outbound dispatches yet.</p>
-              <p style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>
-                Use the controls on the left to trigger normal vitals updates or emergency heart rate anomalies!
-              </p>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: '550px', overflowY: 'auto' }}>
-              {dispatchLog.map((log) => (
-                <div
-                  key={log.id}
-                  style={{
-                    padding: '1rem',
-                    borderRadius: '10px',
-                    background: log.type === 'call' ? 'rgba(59,130,246,0.15)' : log.type === 'sms' ? 'rgba(139,92,246,0.15)' : log.type === 'volunteer' ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)',
-                    border: `1px solid ${log.type === 'call' ? '#3b82f6' : log.type === 'sms' ? '#8b5cf6' : log.type === 'volunteer' ? '#ef4444' : '#10b981'}`
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', fontWeight: 700, marginBottom: '0.35rem' }}>
-                    <span>{log.title}</span>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>{log.timestamp}</span>
-                  </div>
-                  <p style={{ fontSize: '0.83rem', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
-                    Recipient: <strong>{log.recipient}</strong>
-                  </p>
-                  {log.script && (
-                    <div style={{ background: 'rgba(0,0,0,0.3)', padding: '0.5rem', borderRadius: '6px', fontSize: '0.85rem', color: '#60a5fa', fontStyle: 'italic' }}>
-                      "{log.script}"
-                    </div>
-                  )}
-                  {log.body && (
-                    <div style={{ background: 'rgba(0,0,0,0.3)', padding: '0.5rem', borderRadius: '6px', fontSize: '0.83rem', color: '#e2e8f0', fontFamily: 'var(--font-mono)' }}>
-                      {log.body}
-                    </div>
-                  )}
-                  <div style={{ fontSize: '0.78rem', color: '#10b981', marginTop: '0.35rem', fontWeight: 600 }}>
-                    Status: {log.status}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <button
+          className="btn btn-primary"
+          disabled={loading}
+          onClick={() => handleSimulateVitals(null)}
+          style={{ width: '100%', padding: '0.85rem', fontSize: '1rem', fontWeight: 800 }}
+        >
+          <Send size={18} style={{ display: 'inline', marginRight: '6px' }} /> Ingest Live Telemetry Stream ({heartRate} BPM, {spo2Avg}% SpO2, {skinTemp}°C)
+        </button>
       </div>
+
+      {/* SECTION 4: ACTIVE OUTBOUND EMERGENCY SMS & IVR DISPATCH LOG */}
+      <div className="glass-card">
+        <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <MessageSquare color="var(--accent-cyan)" /> Active Outbound Communication & Emergency Dispatch Log
+        </h3>
+
+        {dispatchLog.length === 0 ? (
+          <div style={{ padding: '3rem 1.5rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <Send size={32} style={{ margin: '0 auto 0.75rem', opacity: 0.4 }} />
+            <p>No outbound emergency dispatches logged yet.</p>
+            <p style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>
+              Use the centralized range sliders above or select a preset scenario to trigger real-time Twilio SMS & parallel escalation dispatches!
+            </p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: '550px', overflowY: 'auto' }}>
+            {dispatchLog.map((log) => (
+              <div
+                key={log.id}
+                style={{
+                  padding: '1rem',
+                  borderRadius: '10px',
+                  background: log.type === 'call' ? 'rgba(59,130,246,0.15)' : log.type === 'sms' ? 'rgba(139,92,246,0.15)' : log.type === 'volunteer' ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)',
+                  border: `1px solid ${log.type === 'call' ? '#3b82f6' : log.type === 'sms' ? '#8b5cf6' : log.type === 'volunteer' ? '#ef4444' : '#10b981'}`
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', fontWeight: 700, marginBottom: '0.35rem' }}>
+                  <span>{log.title}</span>
+                  <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>{log.timestamp}</span>
+                </div>
+                <p style={{ fontSize: '0.83rem', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
+                  Recipient: <strong>{log.recipient}</strong>
+                </p>
+                {log.script && (
+                  <div style={{ background: 'rgba(0,0,0,0.3)', padding: '0.5rem', borderRadius: '6px', fontSize: '0.85rem', color: '#60a5fa', fontStyle: 'italic' }}>
+                    "{log.script}"
+                  </div>
+                )}
+                {log.body && (
+                  <div style={{ background: 'rgba(0,0,0,0.3)', padding: '0.5rem', borderRadius: '6px', fontSize: '0.83rem', color: '#e2e8f0', fontFamily: 'var(--font-mono)' }}>
+                    {log.body}
+                  </div>
+                )}
+                <div style={{ fontSize: '0.78rem', color: '#10b981', marginTop: '0.35rem', fontWeight: 600 }}>
+                  Status: {log.status}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
 
       {/* SIMULATED PHONE CALL IVR POPUP MODAL */}
       {activeCallModal && (
