@@ -13,6 +13,7 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/elder-profile', require('./routes/elderProfile'));
 
 const PORT = process.env.PORT || 5000;
 
