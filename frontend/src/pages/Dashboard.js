@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import ElderCard from '../components/ElderCard';
 import AlertLogItem from '../components/AlertLogItem';
-import VitalsSimulator from '../components/VitalsSimulator';
 import MedicalHistoryForm from '../components/MedicalHistoryForm';
 import EditElderModal from '../components/EditElderModal';
 import CheckupSummaryModal from '../components/CheckupSummaryModal';
@@ -20,7 +19,7 @@ import {
   Bar,
   ReferenceArea
 } from 'recharts';
-import { Plus, Activity, Heart, AlertTriangle, RefreshCw, FileText, Zap, Stethoscope } from 'lucide-react';
+import { Plus, Activity, Heart, AlertTriangle, RefreshCw, FileText, Stethoscope } from 'lucide-react';
 
 const Dashboard = () => {
   const { user } = useContext(AuthContext);
@@ -227,15 +226,6 @@ const Dashboard = () => {
       {/* Selected Elder Vitals & Analytics Section */}
       {selectedElder && (
         <div>
-          {/* Simulator Toolbar Widget */}
-          <VitalsSimulator
-            selectedElderId={selectedElder._id}
-            onSimulationComplete={() => {
-              fetchDashboardData();
-              fetchElderVitalsAndAlerts(selectedElder._id);
-            }}
-          />
-
           <div className="glass-card" style={{ marginBottom: '2rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
               <div>
@@ -257,13 +247,6 @@ const Dashboard = () => {
                   <Activity size={15} /> Vitals Graph
                 </button>
                 <button
-                  className={`btn ${activeTab === 'control' ? 'btn-primary' : 'btn-secondary'}`}
-                  style={{ padding: '0.4rem 0.85rem', fontSize: '0.85rem', color: activeTab === 'control' ? '#ffffff' : 'var(--accent-cyan)' }}
-                  onClick={() => setActiveTab('control')}
-                >
-                  <Zap size={15} /> Vitals Control Room
-                </button>
-                <button
                   className={`btn ${activeTab === 'medical' ? 'btn-primary' : 'btn-secondary'}`}
                   style={{ padding: '0.4rem 0.85rem', fontSize: '0.85rem' }}
                   onClick={() => setActiveTab('medical')}
@@ -279,25 +262,6 @@ const Dashboard = () => {
                 </button>
               </div>
             </div>
-
-            {/* TAB: CONTROL ROOM */}
-            {activeTab === 'control' && (
-              <div style={{ padding: '1rem', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '12px', border: '1px solid var(--bg-card-border)' }}>
-                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--accent-cyan)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Zap size={20} /> Vitals Simulation & Live Anomaly Control Room
-                </h3>
-                <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
-                  Use the quick simulation buttons below to test real-time Google Fit / smartwatch vitals ingestion, simulate heart rate anomalies, trigger fall alerts, or force a sync cycle for <strong>{selectedElder.name}</strong>.
-                </p>
-                <VitalsSimulator
-                  selectedElderId={selectedElder._id}
-                  onSimulationComplete={() => {
-                    fetchDashboardData();
-                    fetchElderVitalsAndAlerts(selectedElder._id);
-                  }}
-                />
-              </div>
-            )}
 
             {/* TAB 1: VITALS CHARTS */}
             {activeTab === 'vitals' && (
