@@ -10,8 +10,9 @@ import Billing from './pages/Billing';
 import VolunteerView from './pages/VolunteerView';
 import AdminPanel from './pages/AdminPanel';
 import VitalsControlRoom from './pages/VitalsControlRoom';
+import ElderDashboard from './pages/ElderDashboard';
 
-import { Shield, Heart, PlusCircle, CreditCard, Users, LogOut, UserCheck, Zap } from 'lucide-react';
+import { Shield, Heart, PlusCircle, CreditCard, Users, LogOut, UserCheck, Zap, PhoneCall } from 'lucide-react';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, loading } = useContext(AuthContext);
@@ -43,7 +44,7 @@ const NavigationBar = () => {
 
   return (
     <nav className="navbar">
-      <Link to="/dashboard" className="brand-logo">
+      <Link to={user.role === 'elder' ? '/elder-dashboard' : '/dashboard'} className="brand-logo">
         <div className="brand-icon">
           <Shield size={22} />
         </div>
@@ -51,6 +52,11 @@ const NavigationBar = () => {
       </Link>
 
       <div className="nav-links">
+        {/* Elder Mode Link - Available for family & elder users */}
+        <Link to="/elder-dashboard" className={`nav-link ${location.pathname === '/elder-dashboard' ? 'active' : ''}`} style={{ color: '#E11D48', fontWeight: 700 }}>
+          <PhoneCall size={16} style={{ display: 'inline', marginRight: '4px' }} /> Elder Mode
+        </Link>
+
         {user.role === 'family' && (
           <>
             <Link to="/dashboard" className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`}>
@@ -98,6 +104,8 @@ const NavigationBar = () => {
 };
 
 const AppRoutes = () => {
+  const { user } = useContext(AuthContext);
+
   return (
     <div className="app-container">
       <NavigationBar />
@@ -107,10 +115,18 @@ const AppRoutes = () => {
           <Route path="/signup" element={<Signup />} />
 
           <Route
+            path="/elder-dashboard"
+            element={
+              <ProtectedRoute>
+                <ElderDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/dashboard"
             element={
               <ProtectedRoute>
-                <Dashboard />
+                {user?.role === 'elder' ? <Navigate to="/elder-dashboard" replace /> : <Dashboard />}
               </ProtectedRoute>
             }
           />
@@ -155,7 +171,7 @@ const AppRoutes = () => {
             }
           />
 
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<Navigate to={user?.role === 'elder' ? '/elder-dashboard' : '/dashboard'} replace />} />
         </Routes>
       </main>
     </div>
