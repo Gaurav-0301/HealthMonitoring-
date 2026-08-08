@@ -37,51 +37,51 @@ const triggerEscalation = async (elderProfileId, triggerType, triggerValue) => {
 
   console.log(`[ESCALATION INITIATED] Elder: ${elder.name} | Type: ${triggerType} | Value: ${triggerValue} | AlertLog ID: ${alertLog._id}`);
 
-  // STEP 1: Auto-call elder's own phone via Twilio Voice with IVR
+  // STEP 1: Auto-call elder's phone via Twilio Voice IVR (10-second demo check-in window)
   const elderPhone = elder.emergencyContacts[0]?.phone || '9999999999';
   const ivrMessage = `CircleBack Emergency Check-in. Hello ${elder.name}, we detected a health anomaly (${triggerValue}). Press 1 if you are safe, or press 2 for immediate emergency assistance.`;
   
   await makeIVRCall(elderPhone, ivrMessage);
 
   // In production, Twilio webhook receives IVR press.
-  // For immediate escalation pipeline execution, we proceed to STEP 2 (Parallel Execution)
+  // For immediate escalation pipeline execution, we proceed to STEP 2 (Parallel Escalation to Son, Neighbour, Doctor, Ambulance)
   await executeStep2ParallelEscalation(alertLog, elder);
 
   return alertLog;
 };
 
 /**
- * STEP 2: PARALLEL ESCALATION
- * Uses Promise.all to dispatch Family Alerts & Nearby Volunteer Alerts simultaneously.
+ * STEP 2: PARALLEL MULTI-STAKEHOLDER ESCALATION
+ * Dispatches IVR Voice Calls & SMS to Son (Family), Neighbour (Volunteers), Doctor, and Ambulance simultaneously.
  */
 const executeStep2ParallelEscalation = async (alertLog, elder) => {
-  console.log(`[ESCALATION STEP 2] Executing PARALLEL alerts to Family + Nearby Volunteers for ${elder.name}...`);
+  console.log(`[ESCALATION STEP 2] Executing PARALLEL Voice Calls & SMS to Son, Neighbour, Doctor & Ambulance for ${elder.name}...`);
 
   const familyUser = elder.linkedFamilyUserId;
-  const elderLat = elder.geoLocation?.lat || 28.6139;
-  const elderLng = elder.geoLocation?.lng || 77.2090;
+  const elderLat = elder.geoLocation?.lat || elder.geoLocation?.coordinates?.[1] || 28.6139;
+  const elderLng = elder.geoLocation?.lng || elder.geoLocation?.coordinates?.[0] || 77.2090;
   const mapLink = `https://www.google.com/maps?q=${elderLat},${elderLng}`;
 
-  // Task A: Notify Family (SMS + Push Notification)
-  const notifyFamilyPromise = (async () => {
-    const message = `EMERGENCY ALERT [CircleBack]: ${elder.name} failed health check! Anomaly: ${alertLog.triggerType} (${alertLog.triggerValue}). Location: ${elder.address}. Map: ${mapLink}`;
-    
-    // Send to linked family account phone
-    if (familyUser && familyUser.phone) {
-      await sendSMS(familyUser.phone, message);
-      await sendPushNotification(familyUser.email, 'CRITICAL ELDER HEALTH ALERT', message, { alertLogId: alertLog._id.toString() });
-    }
+  const medicalHistory = await MedicalHistory.findOne({ elderProfileId: elder._id });
+  const doctorContact = medicalHistory?.doctorContact || '+91 98765 12345';
+  const ambulanceHotline = '+91 8600475388';
 
-    // Send to primary emergency contacts
-    for (const contact of elder.emergencyContacts || []) {
-      if (contact.phone) {
-        await sendSMS(contact.phone, message);
-      }
+  const alertMessage = `EMERGENCY SOS ALERT [CircleBack]: Elder ${elder.name} failed health check! Anomaly: ${alertLog.triggerType} (${alertLog.triggerValue}). Location: ${elder.address}. GPS: ${mapLink}`;
+  const ivrCallScript = `Emergency SOS Alert! Hello, elder ${elder.name} at ${elder.address} requires immediate emergency check-in. Anomaly: ${alertLog.triggerValue}.`;
+
+  // Task A: Notify Son / Family Member (Voice Call + SMS + Push)
+  const notifyFamilyPromise = (async () => {
+    const sonPhone = familyUser?.phone || elder.emergencyContacts[0]?.phone || '+919876543210';
+    console.log(`[ESCALATION -> SON/FAMILY] Calling & SMSing Son at ${sonPhone}`);
+    await makeIVRCall(sonPhone, ivrCallScript);
+    await sendSMS(sonPhone, alertMessage);
+    if (familyUser?.email) {
+      await sendPushNotification(familyUser.email, 'CRITICAL ELDER HEALTH ALERT', alertMessage, { alertLogId: alertLog._id.toString() });
     }
-    return { success: true, familyNotified: true };
+    return { success: true, sonNotified: true };
   })();
 
-  // Task B: Geospatial MongoDB $near query (within 5km = 5000m) for available verified volunteers
+  // Task B: Geospatial MongoDB $near query (within 5km) for Neighbour / Volunteers (Voice Call + SMS)
   const notifyVolunteersPromise = (async () => {
     let nearbyVolunteers = [];
     try {
@@ -100,43 +100,60 @@ const executeStep2ParallelEscalation = async (alertLog, elder) => {
       nearbyVolunteers = await Volunteer.find({ verified: true, availabilityStatus: 'available' }).populate('userId');
     }
 
-    console.log(`[Geospatial Volunteer Search] Found ${nearbyVolunteers.length} nearby available volunteers within 5km.`);
-
-    const volunteerAlertMessage = `NEIGHBORHOOD SOS ALERT: Elderly resident ${elder.name} at ${elder.address} (${elder.landmark || 'Nearby'}) requires urgent check-in! Location: ${mapLink}`;
+    console.log(`[Geospatial Volunteer Search] Found ${nearbyVolunteers.length} nearby available volunteers/neighbours within 5km.`);
+    const volunteerScript = `Neighborhood SOS Alert! Elderly resident ${elder.name} at ${elder.address} requires urgent neighbour check-in!`;
 
     const notifiedIds = [];
     for (const vol of nearbyVolunteers) {
       if (vol.userId && vol.userId.phone) {
-        await sendSMS(vol.userId.phone, volunteerAlertMessage);
+        console.log(`[ESCALATION -> NEIGHBOUR/VOLUNTEER] Calling & SMSing Neighbour at ${vol.userId.phone}`);
+        await makeIVRCall(vol.userId.phone, volunteerScript);
+        await sendSMS(vol.userId.phone, alertMessage);
         notifiedIds.push(vol.userId.name || vol._id);
       }
     }
-
     return { success: true, volunteersFound: nearbyVolunteers.length, notifiedVolunteers: notifiedIds };
   })();
 
-  // Run Task A and Task B in PARALLEL via Promise.all
-  const [familyResult, volunteerResult] = await Promise.all([notifyFamilyPromise, notifyVolunteersPromise]);
+  // Task C: Notify Doctor / Primary Physician (Voice Call + SMS)
+  const notifyDoctorPromise = (async () => {
+    console.log(`[ESCALATION -> DOCTOR] Calling & SMSing Primary Doctor (${medicalHistory?.doctorName || 'Physician'}) at ${doctorContact}`);
+    const doctorMsg = `MEDICAL ALERT FOR DR. ${medicalHistory?.doctorName || 'Physician'}: Patient ${elder.name} (Age ${elder.age}) triggered emergency anomaly: ${alertLog.triggerValue}. Conditions: ${(medicalHistory?.conditions || []).join(', ') || 'Hypertension'}.`;
+    await makeIVRCall(doctorContact, `Medical Emergency Alert for Dr. ${medicalHistory?.doctorName || 'Physician'}. Patient ${elder.name} requires medical check-in.`);
+    await sendSMS(doctorContact, doctorMsg);
+    return { success: true, doctorNotified: true };
+  })();
+
+  // Task D: Notify Ambulance & Emergency Services Hotline (Voice Call + SMS)
+  const notifyAmbulancePromise = (async () => {
+    console.log(`[ESCALATION -> AMBULANCE] Calling & SMSing Emergency Paramedic Hotline at ${ambulanceHotline}`);
+    const ambulanceMsg = `AMBULANCE DISPATCH ALERT: Urgent paramedic response requested for ${elder.name}, Age ${elder.age}. Address: ${elder.address}. GPS: ${mapLink}. Blood Group: ${medicalHistory?.bloodGroup || 'B+'}.`;
+    await makeIVRCall(ambulanceHotline, `Official Emergency Dispatch. Ambulance required for elder ${elder.name} at ${elder.address}.`);
+    await sendSMS(ambulanceHotline, ambulanceMsg);
+    return { success: true, ambulanceNotified: true };
+  })();
+
+  // Execute ALL tasks in PARALLEL via Promise.all
+  await Promise.all([notifyFamilyPromise, notifyVolunteersPromise, notifyDoctorPromise, notifyAmbulancePromise]);
 
   // Log Step 2 result in AlertLog
   alertLog.escalationSteps.push({
     step: 2,
-    title: 'Step 2: Parallel Family SMS/Push & Geospatial Nearby Volunteer Escalation',
+    title: 'Step 2: Multi-Stakeholder Emergency Calls & SMS (Son, Neighbour, Doctor & Ambulance)',
     timestamp: new Date(),
     status: 'parallel_dispatched',
-    details: `Family notified via SMS/Push. Nearby volunteer search found ${volunteerResult.volunteersFound} verified responders within 5km radius.`
+    details: `Parallel IVR Calls & SMS sent to Son/Family, Nearby Neighbours/Volunteers, Primary Doctor, and Paramedic Ambulance Hotline.`
   });
   await alertLog.save();
 
-  // Schedule Step 3 (Emergency Services Dispatch) after window if unacknowledged
   await executeStep3EmergencyServices(alertLog, elder);
 };
 
 /**
- * STEP 3: Escalation to Emergency Services
+ * STEP 3: Escalation to Emergency Medical Services
  */
 const executeStep3EmergencyServices = async (alertLog, elder) => {
-  console.log(`[ESCALATION STEP 3] Dispatching alert to Emergency Services for ${elder.name}...`);
+  console.log(`[ESCALATION STEP 3] Dispatching final emergency summary to Paramedics for ${elder.name}...`);
 
   const medicalHistory = await MedicalHistory.findOne({ elderProfileId: elder._id });
   const elderLat = elder.geoLocation?.lat || elder.geoLocation?.coordinates?.[1] || 28.6139;
@@ -156,18 +173,15 @@ const executeStep3EmergencyServices = async (alertLog, elder) => {
     emergencyDoctor: medicalHistory?.doctorName ? `${medicalHistory.doctorName} (${medicalHistory.doctorContact})` : 'N/A'
   };
 
-  const emergencyMessage = `OFFICIAL EMERGENCY DISPATCH [CircleBack Platform]: Elder ${elder.name}, Age ${elder.age}. Address: ${elder.address}. GPS: ${mapLink}. Blood: ${emergencyPayload.bloodGroup}. Conditions: ${emergencyPayload.criticalConditions.join(', ') || 'None'}.`;
-
-  // Send to emergency dispatch hotline
-  const targetPhone = elder.linkedFamilyUserId?.phone || elder.emergencyContacts[0]?.phone || '+918600475388';
-  await sendSMS(targetPhone, emergencyMessage);
+  const emergencyMessage = `OFFICIAL PARAMEDIC DISPATCH [CircleBack]: Elder ${elder.name}, Age ${elder.age}. Address: ${elder.address}. GPS: ${mapLink}. Blood: ${emergencyPayload.bloodGroup}. Doctor: ${emergencyPayload.emergencyDoctor}.`;
+  await sendSMS('+918600475388', emergencyMessage);
 
   alertLog.escalationSteps.push({
     step: 3,
-    title: 'Step 3: Direct Emergency Services & Paramedic Dispatch',
+    title: 'Step 3: Paramedic & Emergency Medical Services Hotline Active Dispatch',
     timestamp: new Date(),
     status: 'escalated_to_emergency',
-    details: `Medical history summary and live GPS dispatched to local emergency services. Payload: ${JSON.stringify(emergencyPayload)}`
+    details: `Medical history summary & live GPS location dispatched to emergency services.`
   });
 
   alertLog.finalStatus = 'escalated_to_emergency';

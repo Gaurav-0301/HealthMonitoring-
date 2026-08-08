@@ -161,35 +161,58 @@ const VitalsControlRoom = () => {
       const timestamp = new Date().toLocaleTimeString();
 
       if (escalationTriggered && escalationLog) {
-        // Step 1: Twilio IVR Call
+        // Step 1: Elder Call
         newDispatches.push({
           id: Date.now() + 1,
           type: 'call',
           title: `☎️ OUTBOUND TWILIO IVR VOICE CALL TO ELDER (${elderName})`,
           recipient: targetElder?.emergencyContacts[0]?.phone || '+91 98765 43210',
-          script: `CarePulse Emergency Check-in. Hello ${elderName}, we detected a health anomaly (${anomalyReport.value}). Press 1 if safe, or press 2 for help.`,
-          status: 'Ringing / Waiting for digit response',
+          script: `CircleBack Emergency Check-in. Hello ${elderName}, we detected a health anomaly (${anomalyReport.value}). Press 1 if safe, or press 2 for help.`,
+          status: 'Ringing (10s Demo Window)',
           timestamp
         });
 
-        // Step 2: Parallel SMS & Volunteer Search
+        // Step 2: Son / Family Member
         newDispatches.push({
           id: Date.now() + 2,
-          type: 'sms',
-          title: `📱 PARALLEL TWILIO SMS TO FAMILY (${user?.name || 'Family Member'})`,
-          recipient: user?.phone || '+91 98765 43210',
-          body: `EMERGENCY ALERT [CarePulse]: ${elderName} failed health check! Anomaly: ${anomalyReport.type} (${anomalyReport.value}). Address: ${targetElder?.address}. Map: https://maps.google.com/?q=${targetElder?.geoLocation?.lat || 28.6139},${targetElder?.geoLocation?.lng || 77.2090}`,
-          status: 'Delivered (Twilio SMS Gateway)',
+          type: 'call',
+          title: `☎️ OUTBOUND TWILIO IVR VOICE CALL & SMS TO SON / FAMILY (${targetElder?.emergencyContacts[0]?.name || 'Son'})`,
+          recipient: targetElder?.emergencyContacts[0]?.phone || '+91 98765 43210',
+          body: `EMERGENCY ALERT [CircleBack]: ${elderName} failed health check! Anomaly: ${anomalyReport.type} (${anomalyReport.value}). Address: ${targetElder?.address}. GPS: https://maps.google.com/?q=28.6139,77.2090`,
+          status: 'Dispatched to Son / Family Member',
           timestamp
         });
 
+        // Step 3: Neighbour / Community Volunteer
         newDispatches.push({
           id: Date.now() + 3,
           type: 'volunteer',
-          title: `🚑 GEOSPATIAL $near 5km VOLUNTEER DISPATCH ALERT`,
-          recipient: 'Nearby Verified Volunteers (Within 5km radius)',
-          body: `NEIGHBORHOOD SOS: ${elderName} at ${targetElder?.address} requires urgent check-in! Navigation Link: https://maps.google.com/?q=28.6139,77.2090`,
-          status: 'Dispatched in Parallel (Promise.all)',
+          title: `🚑 OUTBOUND TWILIO IVR CALL & SMS TO NEIGHBOUR / VOLUNTEERS`,
+          recipient: 'Nearby Verified Neighbours & Responders (Within 5km radius)',
+          body: `NEIGHBORHOOD SOS: Elderly resident ${elderName} at ${targetElder?.address} requires urgent neighbour check-in! Map: https://maps.google.com/?q=28.6139,77.2090`,
+          status: 'Dispatched (MongoDB $near 5km)',
+          timestamp
+        });
+
+        // Step 4: Primary Doctor
+        newDispatches.push({
+          id: Date.now() + 4,
+          type: 'call',
+          title: `🩺 OUTBOUND TWILIO EMERGENCY CALL & SMS TO PRIMARY DOCTOR`,
+          recipient: 'Dr. Physician (+91 98765 12345)',
+          script: `Medical Emergency Alert for Primary Doctor. Patient ${elderName} triggered critical health anomaly (${anomalyReport.value}). Medical history dispatched.`,
+          status: 'Dispatched to Primary Physician',
+          timestamp
+        });
+
+        // Step 5: Paramedics & Ambulance Hotline
+        newDispatches.push({
+          id: Date.now() + 5,
+          type: 'sms',
+          title: `🏥 OFFICIAL PARAMEDIC & AMBULANCE DISPATCH HOTLINE`,
+          recipient: 'Emergency Medical Services (+91 8600475388)',
+          body: `PARAMEDIC DISPATCH: Elder ${elderName}, Age ${targetElder?.age || 74}. Address: ${targetElder?.address}. GPS: https://maps.google.com/?q=28.6139,77.2090. Blood Group: B+.`,
+          status: 'Dispatched to Paramedic Hotline',
           timestamp
         });
 
