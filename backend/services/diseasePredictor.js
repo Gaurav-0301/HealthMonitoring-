@@ -195,12 +195,30 @@ const predictHealthRisks = async (vitalsData) => {
     metabolic = Math.min(0.98, Math.max(0.000, metabolic));
   }
 
+  const c = Number(cardiac.toFixed(3));
+  const r = Number(respiratory.toFixed(3));
+  const f = Number(fever.toFixed(3));
+  const s = Number(stress.toFixed(3));
+  const m = Number(metabolic.toFixed(3));
+
   return {
-    cardiac: Number(cardiac.toFixed(3)),
-    respiratory: Number(respiratory.toFixed(3)),
-    fever: Number(fever.toFixed(3)),
-    stress: Number(stress.toFixed(3)),
-    metabolic: Number(metabolic.toFixed(3)),
+    cardiac: c,
+    respiratory: r,
+    fever: f,
+    stress: s,
+    metabolic: m,
+    cardiacRisk: c,
+    respiratoryRisk: r,
+    feverRisk: f,
+    stressRisk: s,
+    metabolicRisk: m,
+    risks: {
+      cardiac_risk: c,
+      respiratory_risk: r,
+      fever_infection_risk: f,
+      stress_fatigue_risk: s,
+      metabolic_lifestyle_risk: m
+    },
     flagged: [],
     disclaimer: 'This is a screening heuristic trained on synthetic data. Not a medical diagnosis.',
     source: 'local_model'

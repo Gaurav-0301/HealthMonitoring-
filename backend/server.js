@@ -180,12 +180,14 @@ connectDatabase().then(async () => {
   // Start scheduled cron job
   initVitalsSyncCron();
 
-  app.listen(PORT, () => {
-    console.log(`\n==================================================`);
-    console.log(`🚀 CircleBack Backend Server listening on port ${PORT}`);
-    console.log(`🔗 API Base URL: http://localhost:${PORT}/api`);
-    console.log(`==================================================\n`);
-  });
+  if (process.env.NODE_ENV !== 'test') {
+    app.listen(PORT, () => {
+      console.log(`\n==================================================`);
+      console.log(`🚀 CircleBack Backend Server listening on port ${PORT}`);
+      console.log(`🔗 API Base URL: http://localhost:${PORT}/api`);
+      console.log(`==================================================\n`);
+    });
+  }
 });
 
 module.exports = app;
