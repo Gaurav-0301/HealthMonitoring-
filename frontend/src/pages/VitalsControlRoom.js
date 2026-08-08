@@ -467,10 +467,6 @@ const VitalsControlRoom = () => {
         >
           🛑 Stop Emergency Alert & Mark Safe
         </button>
-      </div>tive.'}
-            </p>
-          </div>
-        </div>
       </div>
 
       {/* SECTION 1: RADIO BUTTON ELDER SELECTION */}

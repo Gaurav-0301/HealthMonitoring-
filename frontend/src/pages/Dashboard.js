@@ -104,6 +104,21 @@ const Dashboard = () => {
     }
   };
 
+  const handleDeleteElder = async (elder) => {
+    if (window.confirm(`Are you sure you want to remove ${elder.name}'s profile? All associated vitals, history, and alert logs will be permanently deleted.`)) {
+      try {
+        await api.delete(`/elder-profile/${elder._id}`);
+        alert(`${elder.name}'s profile deleted successfully.`);
+        if (selectedElder && selectedElder._id === elder._id) {
+          setSelectedElder(null);
+        }
+        fetchDashboardData();
+      } catch (err) {
+        alert('Error deleting profile: ' + (err.response?.data?.message || err.message));
+      }
+    }
+  };
+
   const activeAlertCount = elders.filter(e => e.status === 'alert_triggered').length;
   const latestReading = vitalsHistory.length > 0 ? vitalsHistory[vitalsHistory.length - 1] : null;
   const isHighRiskSpike = latestReading && (
