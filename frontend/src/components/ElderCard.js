@@ -1,7 +1,7 @@
 import React from 'react';
-import { Heart, Activity, AlertTriangle, ShieldCheck, MapPin, Watch, FileText, Edit3, Phone } from 'lucide-react';
+import { Heart, Activity, AlertTriangle, ShieldCheck, MapPin, Watch, FileText, Edit3, Phone, Trash2 } from 'lucide-react';
 
-const ElderCard = ({ elder, onSelect, onTriggerSOS, onEdit }) => {
+const ElderCard = ({ elder, onSelect, onTriggerSOS, onEdit, onDelete }) => {
   const getStatusBadge = (status) => {
     switch (status) {
       case 'alert_triggered':
@@ -58,11 +58,21 @@ const ElderCard = ({ elder, onSelect, onTriggerSOS, onEdit }) => {
           <FileText size={14} /> Vitals
         </button>
         <button className="btn btn-secondary" style={{ fontSize: '0.82rem', borderColor: 'var(--accent-cyan)', color: 'var(--accent-cyan)' }} onClick={() => onEdit(elder)}>
-          <Edit3 size={14} /> Edit Profile
+          <Edit3 size={14} /> Edit
         </button>
         <button className="btn btn-danger" style={{ fontSize: '0.82rem' }} onClick={() => onTriggerSOS(elder._id)}>
           <AlertTriangle size={14} /> SOS
         </button>
+        {onDelete && (
+          <button
+            className="btn btn-secondary"
+            style={{ fontSize: '0.82rem', borderColor: '#ef4444', color: '#ef4444', padding: '0.35rem 0.5rem' }}
+            title="Remove Elder Profile"
+            onClick={() => onDelete(elder)}
+          >
+            <Trash2 size={14} />
+          </button>
+        )}
       </div>
     </div>
   );

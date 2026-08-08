@@ -250,4 +250,26 @@ router.post('/:id/connect-google-fit', authMiddleware, async (req, res) => {
   }
 });
 
+// DELETE /api/elder-profile/:id - Remove elder profile and clean up associated records
+router.delete('/:id', authMiddleware, async (req, res) => {
+  try {
+    const elder = await ElderProfile.findById(req.params.id);
+    if (!elder) return res.status(404).json({ message: 'Elder profile not found' });
+
+    const VitalsHistory = require('../models/VitalsHistory');
+    const AlertLog = require('../models/AlertLog');
+
+    await Promise.all([
+      ElderProfile.findByIdAndDelete(req.params.id),
+      MedicalHistory.deleteMany({ elderProfileId: req.params.id }),
+      VitalsHistory.deleteMany({ elderProfileId: req.params.id }),
+      AlertLog.deleteMany({ elderProfileId: req.params.id })
+    ]);
+
+    res.json({ message: 'Elder profile and all associated records deleted successfully', deletedId: req.params.id });
+  } catch (error) {
+    res.status(500).json({ message: 'Error deleting elder profile', error: error.message });
+  }
+});
+
 module.exports = router;

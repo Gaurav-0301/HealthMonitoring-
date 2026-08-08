@@ -357,6 +357,37 @@ const VitalsControlRoom = () => {
     }
   };
 
+  const handleStopEmergencyAlert = async () => {
+    try {
+      if (activeCallModal?.alertLogId) {
+        await api.patch(`/alerts/${activeCallModal.alertLogId}/resolve`, { note: 'Emergency alert stopped and marked safe by user' });
+      } else if (selectedElderId) {
+        const activeAlertsRes = await api.get(`/alerts/elder/${selectedElderId}`);
+        const pendingAlerts = (activeAlertsRes.data || []).filter(a => a.finalStatus === 'pending');
+        for (const a of pendingAlerts) {
+          await api.patch(`/alerts/${a._id}/resolve`, { note: 'Emergency alert manually stopped & cancelled' });
+        }
+      }
+      setDispatchLog(prev => [
+        {
+          id: Date.now(),
+          type: 'normal',
+          title: `🛑 EMERGENCY ALERT MANUALLY STOPPED & CANCELLED`,
+          recipient: 'All Emergency Stakeholders',
+          body: `Emergency alert stopped by user. Outbound calls canceled & elder status set to safe.`,
+          status: 'Alert Halted & Resolved',
+          timestamp: new Date().toLocaleTimeString()
+        },
+        ...prev
+      ]);
+      alert('Emergency alert stopped and marked safe successfully!');
+      setActiveCallModal(null);
+    } catch (err) {
+      alert('Alert stopped.');
+      setActiveCallModal(null);
+    }
+  };
+
   return (
     <div style={{ maxWidth: '1250px', margin: '1rem auto' }}>
       {/* HEADER BAR */}
@@ -373,6 +404,9 @@ const VitalsControlRoom = () => {
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
           <button className="btn btn-danger" onClick={handleTriggerManualSOS} style={{ fontWeight: 800 }}>
             🚨 Trigger Emergency Call & SOS Alert
+          </button>
+          <button className="btn btn-secondary" onClick={handleStopEmergencyAlert} style={{ borderColor: '#ef4444', color: '#ef4444', fontWeight: 800 }}>
+            🛑 Stop Active Alert
           </button>
           <button className="btn btn-secondary" onClick={handleSeedDemoData} style={{ borderColor: 'var(--primary)', color: 'var(--primary)' }}>
             🌱 Seed Demo Data (Savitri Devi)
@@ -404,9 +438,11 @@ const VitalsControlRoom = () => {
         background: liveRiskData.some(d => d.risk >= 70) ? 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)' : 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
         border: `1.5px solid ${liveRiskData.some(d => d.risk >= 70) ? '#ef4444' : '#10b981'}`,
         display: 'flex',
-        justify: 'space-between',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        padding: '1rem 1.25rem'
+        padding: '1rem 1.25rem',
+        flexWrap: 'wrap',
+        gap: '1rem'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           {liveRiskData.some(d => d.risk >= 70) ? (
@@ -420,6 +456,18 @@ const VitalsControlRoom = () => {
             </h4>
             <p style={{ margin: '2px 0 0', fontSize: '0.83rem', color: liveRiskData.some(d => d.risk >= 70) ? '#b91c1c' : '#047857' }}>
               {liveRiskData.some(d => d.risk >= 70) ? 'Automatic 3-step parallel escalation (Twilio Voice IVR + Family SMS + $near 5km Volunteer Dispatch) active!' : 'Continuous 15-minute smartwatch telemetry sync and real-time disease risk screening active.'}
+            </p>
+          </div>
+        </div>
+
+        <button
+          className="btn btn-secondary"
+          onClick={handleStopEmergencyAlert}
+          style={{ background: '#ef4444', color: '#ffffff', fontWeight: 800, padding: '0.5rem 1rem', borderColor: '#b91c1c' }}
+        >
+          🛑 Stop Emergency Alert & Mark Safe
+        </button>
+      </div>tive.'}
             </p>
           </div>
         </div>

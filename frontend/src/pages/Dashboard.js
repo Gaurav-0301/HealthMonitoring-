@@ -203,6 +203,7 @@ const Dashboard = () => {
                 onSelect={handleSelectElder}
                 onTriggerSOS={handleTriggerSOS}
                 onEdit={(elderToEdit) => setEditingElder(elderToEdit)}
+                onDelete={handleDeleteElder}
               />
             ))}
           </div>
