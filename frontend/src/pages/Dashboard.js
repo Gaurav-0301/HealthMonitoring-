@@ -48,6 +48,10 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchDashboardData();
+    const interval = setInterval(() => {
+      fetchDashboardData();
+    }, 3000);
+    return () => clearInterval(interval);
   }, []);
 
   const fetchElderVitalsAndAlerts = async (elderId) => {
@@ -72,7 +76,7 @@ const Dashboard = () => {
   useEffect(() => {
     if (selectedElder) {
       fetchElderVitalsAndAlerts(selectedElder._id);
-      const interval = setInterval(() => fetchElderVitalsAndAlerts(selectedElder._id), 8000);
+      const interval = setInterval(() => fetchElderVitalsAndAlerts(selectedElder._id), 3000);
       return () => clearInterval(interval);
     }
   }, [selectedElder]);

@@ -133,8 +133,21 @@ const executeStep2ParallelEscalation = async (alertLog, elder) => {
     return { success: true, ambulanceNotified: true };
   })();
 
+  // Task E: Notify ALL Registered Emergency Contacts on Elder Profile (Voice Calls + SMS)
+  const notifyAllContactsPromise = (async () => {
+    const contacts = elder.emergencyContacts || [];
+    for (const c of contacts) {
+      if (c.phone) {
+        console.log(`[ESCALATION -> REGISTERED CONTACT: ${c.name} (${c.relation})] Calling & SMSing at ${c.phone}`);
+        await makeIVRCall(c.phone, `Emergency SOS Alert! Hello ${c.name}, elder ${elder.name} requires immediate emergency check-in!`);
+        await sendSMS(c.phone, `EMERGENCY SOS ALERT [CircleBack]: Elder ${elder.name} (${c.relation}) requires immediate assistance! Location: ${elder.address}. GPS: ${mapLink}`);
+      }
+    }
+    return { success: true, contactsNotified: contacts.length };
+  })();
+
   // Execute ALL tasks in PARALLEL via Promise.all
-  await Promise.all([notifyFamilyPromise, notifyVolunteersPromise, notifyDoctorPromise, notifyAmbulancePromise]);
+  await Promise.all([notifyFamilyPromise, notifyVolunteersPromise, notifyDoctorPromise, notifyAmbulancePromise, notifyAllContactsPromise]);
 
   // Log Step 2 result in AlertLog
   alertLog.escalationSteps.push({
