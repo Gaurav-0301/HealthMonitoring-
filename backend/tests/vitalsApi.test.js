@@ -21,11 +21,23 @@ beforeAll(async () => {
   // Seed demo accounts or use auto-seeded elder
   await request(app).post('/api/auth/seed-demo');
 
+  const User = require('../models/User');
+  const demoUser = await User.findOne({ email: 'demo@carepulse.com' });
   const ElderProfile = require('../models/ElderProfile');
-  const elder = await ElderProfile.findOne({ name: 'Savitri Devi' });
-  if (elder) {
-    elderId = elder._id.toString();
+  let elder = await ElderProfile.findOne({ name: 'Savitri Devi' });
+  if (!elder && demoUser) {
+    elder = await ElderProfile.create({
+      linkedFamilyUserId: demoUser._id,
+      name: 'Savitri Devi',
+      age: 74,
+      gender: 'female',
+      address: 'Flat 402, Sunshine Apartments, Vasant Kunj, New Delhi',
+      emergencyContacts: [
+        { name: 'Rajesh Sharma', relation: 'Son / Family', phone: '+918600475388' }
+      ]
+    });
   }
+  elderId = elder ? elder._id.toString() : '';
 
   // Login as demo family member
   const loginRes = await request(app)
