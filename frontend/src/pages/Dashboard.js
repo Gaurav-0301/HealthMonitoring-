@@ -133,6 +133,23 @@ const Dashboard = () => {
     (latestReading.metabolicRisk || 0) >= 0.70
   );
 
+  const handleStopElderAlerts = async () => {
+    try {
+      const activeElders = elders.filter(e => e.status === 'alert_triggered');
+      for (const e of activeElders) {
+        const activeAlertsRes = await api.get(`/alerts/elder/${e._id}`);
+        const pendingAlerts = (activeAlertsRes.data || []).filter(a => a.finalStatus === 'pending' || a.finalStatus === 'escalated_to_emergency');
+        for (const a of pendingAlerts) {
+          await api.patch(`/alerts/${a._id}/resolve`, { note: 'Emergency alert manually stopped from Family Dashboard' });
+        }
+      }
+      alert('Active emergency alert stopped and marked safe!');
+      fetchDashboardData();
+    } catch (err) {
+      alert('Error stopping emergency alert: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
   return (
     <div>
       {/* Top Header */}
@@ -178,7 +195,7 @@ const Dashboard = () => {
 
       {/* Emergency Active Alert Banner */}
       {activeAlertCount > 0 && (
-        <div className="alert-banner-emergency">
+        <div className="alert-banner-emergency" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <AlertTriangle size={28} color="#ef4444" className="spin" />
             <div>
@@ -186,9 +203,17 @@ const Dashboard = () => {
                 CRITICAL HEALTH ALERT ACTIVATED ({activeAlertCount} Elder Profile)
               </h3>
               <p style={{ fontSize: '0.9rem', color: 'white' }}>
-                Parallel escalation pipeline active. Check alert logs below for live step-by-step progress.
+                Parallel escalation pipeline active. Manage control & emergency calls in Vitals Control Room.
               </p>
             </div>
+          </div>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <Link to="/control-room" className="btn btn-secondary" style={{ background: '#ffffff', color: '#0f172a', fontWeight: 800 }}>
+              🎛️ Go to Vitals Control Room
+            </Link>
+            <button className="btn btn-danger" onClick={handleStopElderAlerts} style={{ background: '#dc2626', borderColor: '#b91c1c', fontWeight: 800 }}>
+              🛑 Stop Alert & Mark Safe
+            </button>
           </div>
         </div>
       )}

@@ -232,6 +232,10 @@ router.post('/seed-demo', async (req, res) => {
         calibrationComplete: true,
         status: 'active'
       });
+    } else {
+      elder.status = 'active';
+      await elder.save();
+    }
 
       // Medical History
       await MedicalHistory.create({

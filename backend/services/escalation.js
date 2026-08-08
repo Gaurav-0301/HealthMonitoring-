@@ -221,7 +221,7 @@ const resolveAlert = async (alertLogId, resolvedByRole, resolvedByName, note = '
   await alertLog.save();
 
   // Reset elder status to active
-  await ElderProfile.findByIdAndUpdate(alertLog.elderProfileId, { status: 'resolved' });
+  await ElderProfile.findByIdAndUpdate(alertLog.elderProfileId, { status: 'active' });
 
   return alertLog;
 };
