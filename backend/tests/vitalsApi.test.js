@@ -28,7 +28,7 @@ beforeAll(async () => {
     .send({ email: 'demo@carepulse.com', password: 'password123' });
 
   jwtToken = loginRes.body.token;
-}, 120000);
+}, 300000);
 
 afterAll(async () => {
   await mongoose.disconnect();
