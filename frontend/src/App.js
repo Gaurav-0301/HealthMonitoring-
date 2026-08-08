@@ -26,7 +26,13 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/dashboard" replace />;
+    const roleRedirects = {
+      elder: '/elder-dashboard',
+      volunteer: '/volunteer',
+      admin: '/admin',
+      family: '/dashboard'
+    };
+    return <Navigate to={roleRedirects[user.role] || '/dashboard'} replace />;
   }
 
   return children;
@@ -42,9 +48,22 @@ const NavigationBar = () => {
     return `badge-tier badge-${tier || 'free'}`;
   };
 
+  const getHomePath = () => {
+    switch (user.role) {
+      case 'elder':
+        return '/elder-dashboard';
+      case 'volunteer':
+        return '/volunteer';
+      case 'admin':
+        return '/admin';
+      default:
+        return '/dashboard';
+    }
+  };
+
   return (
     <nav className="navbar">
-      <Link to={user.role === 'elder' ? '/elder-dashboard' : '/dashboard'} className="brand-logo">
+      <Link to={getHomePath()} className="brand-logo">
         <div className="brand-icon">
           <Shield size={22} />
         </div>
@@ -52,18 +71,16 @@ const NavigationBar = () => {
       </Link>
 
       <div className="nav-links">
-        {/* Elder Mode Link - Available for family & elder users */}
-        <Link to="/elder-dashboard" className={`nav-link ${location.pathname === '/elder-dashboard' ? 'active' : ''}`} style={{ color: '#E11D48', fontWeight: 700 }}>
-          <PhoneCall size={16} style={{ display: 'inline', marginRight: '4px' }} /> Elder Mode
-        </Link>
+        {user.role === 'elder' && (
+          <Link to="/elder-dashboard" className={`nav-link ${location.pathname === '/elder-dashboard' ? 'active' : ''}`} style={{ color: '#E11D48', fontWeight: 700 }}>
+            <PhoneCall size={16} style={{ display: 'inline', marginRight: '4px' }} /> Elder Care Mode
+          </Link>
+        )}
 
         {user.role === 'family' && (
           <>
             <Link to="/dashboard" className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`}>
-              <Heart size={16} style={{ display: 'inline', marginRight: '4px' }} /> Dashboard
-            </Link>
-            <Link to="/control-room" className={`nav-link ${location.pathname === '/control-room' ? 'active' : ''}`} style={{ color: 'var(--accent-cyan)' }}>
-              <Zap size={16} style={{ display: 'inline', marginRight: '4px' }} /> Control Room
+              <Heart size={16} style={{ display: 'inline', marginRight: '4px' }} /> Dashboard & Control Room
             </Link>
             <Link to="/onboarding" className={`nav-link ${location.pathname === '/onboarding' ? 'active' : ''}`}>
               <PlusCircle size={16} style={{ display: 'inline', marginRight: '4px' }} /> Add Elder
@@ -117,7 +134,7 @@ const AppRoutes = () => {
           <Route
             path="/elder-dashboard"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['elder', 'family', 'admin']}>
                 <ElderDashboard />
               </ProtectedRoute>
             }
@@ -125,15 +142,15 @@ const AppRoutes = () => {
           <Route
             path="/dashboard"
             element={
-              <ProtectedRoute>
-                {user?.role === 'elder' ? <Navigate to="/elder-dashboard" replace /> : <Dashboard />}
+              <ProtectedRoute allowedRoles={['family', 'admin']}>
+                <Dashboard />
               </ProtectedRoute>
             }
           />
           <Route
             path="/control-room"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['family', 'admin']}>
                 <VitalsControlRoom />
               </ProtectedRoute>
             }
@@ -141,7 +158,7 @@ const AppRoutes = () => {
           <Route
             path="/onboarding"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['family', 'admin']}>
                 <ElderOnboarding />
               </ProtectedRoute>
             }
@@ -149,7 +166,7 @@ const AppRoutes = () => {
           <Route
             path="/billing"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['family', 'admin']}>
                 <Billing />
               </ProtectedRoute>
             }
@@ -157,7 +174,7 @@ const AppRoutes = () => {
           <Route
             path="/volunteer"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['volunteer', 'admin']}>
                 <VolunteerView />
               </ProtectedRoute>
             }
@@ -171,7 +188,11 @@ const AppRoutes = () => {
             }
           />
 
-          <Route path="*" element={<Navigate to={user?.role === 'elder' ? '/elder-dashboard' : '/dashboard'} replace />} />
+          <Route path="*" element={<Navigate to={
+            user?.role === 'elder' ? '/elder-dashboard' :
+            user?.role === 'volunteer' ? '/volunteer' :
+            user?.role === 'admin' ? '/admin' : '/dashboard'
+          } replace />} />
         </Routes>
       </main>
     </div>

@@ -23,7 +23,7 @@ router.post('/signup', async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
-    const userRole = ['family', 'volunteer', 'admin'].includes(role) ? role : 'family';
+    const userRole = ['family', 'volunteer', 'admin', 'elder'].includes(role) ? role : 'family';
 
     const newUser = await User.create({
       name,
@@ -190,7 +190,21 @@ router.post('/seed-demo', async (req, res) => {
       });
     }
 
-    // 4. Demo Elder Profile (Savitri Devi)
+    // 4. Demo Elder User Account
+    let elderUser = await User.findOne({ email: 'elder@carepulse.com' });
+    if (!elderUser) {
+      elderUser = await User.create({
+        name: 'Savitri Devi (Elder)',
+        email: 'elder@carepulse.com',
+        phone: '+918600475388',
+        passwordHash,
+        role: 'elder',
+        subscriptionTier: 'family_care',
+        subscriptionStatus: 'active'
+      });
+    }
+
+    // 5. Demo Elder Profile (Savitri Devi)
     const ElderProfile = require('../models/ElderProfile');
     const MedicalHistory = require('../models/MedicalHistory');
     const VitalsHistory = require('../models/VitalsHistory');
@@ -245,6 +259,7 @@ router.post('/seed-demo', async (req, res) => {
     res.json({
       message: 'CarePulse Demo accounts and Savitri Devi elder profile seeded successfully!',
       credentials: {
+        elderUser: { email: 'elder@carepulse.com', password: 'password123' },
         familyUser: { email: 'demo@carepulse.com', password: 'password123' },
         volunteerUser: { email: 'volunteer@carepulse.com', password: 'password123' },
         adminUser: { email: 'admin@carepulse.com', password: 'password123' }

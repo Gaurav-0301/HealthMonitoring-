@@ -22,8 +22,12 @@ const Signup = () => {
 
     try {
       const user = await signup({ name, email, phone, password, role });
-      if (user.role === 'volunteer') {
+      if (user.role === 'elder') {
+        navigate('/elder-dashboard');
+      } else if (user.role === 'volunteer') {
         navigate('/volunteer');
+      } else if (user.role === 'admin') {
+        navigate('/admin');
       } else {
         navigate('/dashboard');
       }
@@ -119,23 +123,39 @@ const Signup = () => {
           </div>
 
           <div className="form-group">
-            <label className="form-label">I am registering as:</label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <label className="form-label">Select Your Role:</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
               <button
                 type="button"
                 className={`btn ${role === 'family' ? 'btn-primary' : 'btn-secondary'}`}
                 onClick={() => setRole('family')}
-                style={{ fontSize: '0.9rem' }}
+                style={{ fontSize: '0.85rem' }}
               >
                 👨‍👩‍👧 Family Member
               </button>
               <button
                 type="button"
+                className={`btn ${role === 'elder' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setRole('elder')}
+                style={{ fontSize: '0.85rem' }}
+              >
+                👴 Elder Member
+              </button>
+              <button
+                type="button"
                 className={`btn ${role === 'volunteer' ? 'btn-primary' : 'btn-secondary'}`}
                 onClick={() => setRole('volunteer')}
-                style={{ fontSize: '0.9rem' }}
+                style={{ fontSize: '0.85rem' }}
               >
                 🚑 Nearby Volunteer
+              </button>
+              <button
+                type="button"
+                className={`btn ${role === 'admin' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setRole('admin')}
+                style={{ fontSize: '0.85rem' }}
+              >
+                🛡️ System Admin
               </button>
             </div>
           </div>

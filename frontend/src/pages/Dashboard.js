@@ -19,7 +19,7 @@ import {
   Bar,
   ReferenceArea
 } from 'recharts';
-import { Plus, Activity, Heart, AlertTriangle, RefreshCw, FileText } from 'lucide-react';
+import { Plus, Activity, Heart, AlertTriangle, RefreshCw, FileText, Zap } from 'lucide-react';
 
 const Dashboard = () => {
   const { user } = useContext(AuthContext);
@@ -247,6 +247,13 @@ const Dashboard = () => {
                   <Activity size={15} /> Vitals Graph
                 </button>
                 <button
+                  className={`btn ${activeTab === 'control' ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ padding: '0.4rem 0.85rem', fontSize: '0.85rem', color: activeTab === 'control' ? '#ffffff' : 'var(--accent-cyan)' }}
+                  onClick={() => setActiveTab('control')}
+                >
+                  <Zap size={15} /> Vitals Control Room
+                </button>
+                <button
                   className={`btn ${activeTab === 'medical' ? 'btn-primary' : 'btn-secondary'}`}
                   style={{ padding: '0.4rem 0.85rem', fontSize: '0.85rem' }}
                   onClick={() => setActiveTab('medical')}
@@ -262,6 +269,25 @@ const Dashboard = () => {
                 </button>
               </div>
             </div>
+
+            {/* TAB: CONTROL ROOM */}
+            {activeTab === 'control' && (
+              <div style={{ padding: '1rem', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '12px', border: '1px solid var(--bg-card-border)' }}>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--accent-cyan)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Zap size={20} /> Vitals Simulation & Live Anomaly Control Room
+                </h3>
+                <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
+                  Use the quick simulation buttons below to test real-time Google Fit / smartwatch vitals ingestion, simulate heart rate anomalies, trigger fall alerts, or force a sync cycle for <strong>{selectedElder.name}</strong>.
+                </p>
+                <VitalsSimulator
+                  selectedElderId={selectedElder._id}
+                  onSimulationComplete={() => {
+                    fetchDashboardData();
+                    fetchElderVitalsAndAlerts(selectedElder._id);
+                  }}
+                />
+              </div>
+            )}
 
             {/* TAB 1: VITALS CHARTS */}
             {activeTab === 'vitals' && (

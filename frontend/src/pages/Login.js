@@ -20,7 +20,9 @@ const Login = () => {
 
     try {
       const user = await login(email, password);
-      if (user.role === 'volunteer') {
+      if (user.role === 'elder') {
+        navigate('/elder-dashboard');
+      } else if (user.role === 'volunteer') {
         navigate('/volunteer');
       } else if (user.role === 'admin') {
         navigate('/admin');
@@ -94,9 +96,29 @@ const Login = () => {
         {/* 1-Click Demo Logins */}
         <div style={{ marginTop: '1.75rem', paddingTop: '1.25rem', borderTop: '1px solid var(--bg-card-border)', textAlign: 'center' }}>
           <p style={{ fontSize: '0.82rem', color: 'var(--accent-cyan)', fontWeight: 700, marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            ⚡ 1-Click Quick Demo Accounts:
+            ⚡ 1-Click Quick Demo Accounts by Role:
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              style={{ fontSize: '0.85rem', padding: '0.5rem', borderColor: '#E11D48', color: '#E11D48' }}
+              onClick={async () => {
+                try {
+                  setLoading(true);
+                  await api.post('/auth/seed-demo');
+                  await login('elder@carepulse.com', 'password123');
+                  navigate('/elder-dashboard');
+                } catch (e) {
+                  setError('Demo login failed: ' + e.message);
+                } finally {
+                  setLoading(false);
+                }
+              }}
+            >
+              👴 Elder Member Demo (elder@carepulse.com)
+            </button>
+
             <button
               type="button"
               className="btn btn-secondary"
@@ -114,7 +136,7 @@ const Login = () => {
                 }
               }}
             >
-              👨‍👩‍👧 Family Member Demo (demo@carepulse.com)
+              👨‍👩‍👧 Family Caregiver Demo (demo@carepulse.com)
             </button>
 
             <button
@@ -134,7 +156,7 @@ const Login = () => {
                 }
               }}
             >
-              🚑 Verified Nearby Volunteer (volunteer@carepulse.com)
+              🚑 Nearby Volunteer Demo (volunteer@carepulse.com)
             </button>
 
             <button
@@ -154,7 +176,7 @@ const Login = () => {
                 }
               }}
             >
-              🛡️ Admin Operations Desk (admin@carepulse.com)
+              🛡️ System Admin Demo (admin@carepulse.com)
             </button>
           </div>
         </div>
