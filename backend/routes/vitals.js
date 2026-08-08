@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const VitalsHistory = require('../models/VitalsHistory');
 const ElderProfile = require('../models/ElderProfile');
+const MedicalHistory = require('../models/MedicalHistory');
+const AlertLog = require('../models/AlertLog');
 const { detectVitalsAnomaly } = require('../services/anomalyDetection');
 const { triggerEscalation } = require('../services/escalation');
 const { authMiddleware } = require('../middleware/auth');
@@ -142,7 +144,9 @@ router.post('/:elderId/mock-simulate', authMiddleware, async (req, res) => {
         respiratoryRisk: pred.respiratory,
         feverRisk: pred.fever,
         stressRisk: pred.stress,
-        metabolicRisk: pred.metabolic
+        metabolicRisk: pred.metabolic,
+        flagged: pred.flagged || [],
+        disclaimer: pred.disclaimer || 'This is a screening heuristic trained on synthetic data.'
       });
     }
 
@@ -165,6 +169,79 @@ router.post('/:elderId/mock-simulate', authMiddleware, async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: 'Error simulating vitals', error: error.message });
+  }
+});
+
+// GET /api/vitals/:elderId/checkup-summary - Aggregated Checkup & Health Summary Report
+router.get('/:elderId/checkup-summary', authMiddleware, async (req, res) => {
+  try {
+    const { elderId } = req.params;
+
+    const [elder, medicalHistory, recentVitals, alertLogs] = await Promise.all([
+      ElderProfile.findById(elderId),
+      MedicalHistory.findOne({ elderProfileId: elderId }),
+      VitalsHistory.find({ elderProfileId: elderId }).sort({ timestamp: -1 }).limit(15),
+      AlertLog.find({ elderProfileId: elderId }).sort({ createdAt: -1 }).limit(10)
+    ]);
+
+    if (!elder) {
+      return res.status(404).json({ message: 'Elder profile not found' });
+    }
+
+    const latestReading = recentVitals.length > 0 ? recentVitals[0] : null;
+
+    // Evaluate risk spikes (>= 0.70)
+    const spikedRisks = [];
+    if (latestReading) {
+      if ((latestReading.cardiacRisk || 0) >= 0.70) {
+        spikedRisks.push({ category: 'Cardiac Risk', value: latestReading.cardiacRisk, threshold: 0.70, severity: 'CRITICAL', recommendation: 'Schedule immediate ECG & Cardiac Evaluation' });
+      }
+      if ((latestReading.respiratoryRisk || 0) >= 0.70) {
+        spikedRisks.push({ category: 'Respiratory Risk', value: latestReading.respiratoryRisk, threshold: 0.70, severity: 'CRITICAL', recommendation: 'Pulmonology Checkup & Oxygen Saturation Monitoring' });
+      }
+      if ((latestReading.feverRisk || 0) >= 0.70) {
+        spikedRisks.push({ category: 'Fever / Infection Risk', value: latestReading.feverRisk, threshold: 0.70, severity: 'CRITICAL', recommendation: 'Blood Work / CBC & Inflammatory Marker Screening' });
+      }
+      if ((latestReading.stressRisk || 0) >= 0.70) {
+        spikedRisks.push({ category: 'Stress / Fatigue Risk', value: latestReading.stressRisk, threshold: 0.70, severity: 'HIGH', recommendation: 'Sleep Study & Autonomic Nervous System Assessment' });
+      }
+      if ((latestReading.metabolicRisk || 0) >= 0.70) {
+        spikedRisks.push({ category: 'Metabolic / Lifestyle Risk', value: latestReading.metabolicRisk, threshold: 0.70, severity: 'HIGH', recommendation: 'Comprehensive Metabolic Panel (CMP) & HbA1c Test' });
+      }
+    }
+
+    const checkupSuggested = spikedRisks.length > 0 || alertLogs.some(a => a.finalStatus === 'pending' || a.finalStatus === 'escalated_to_emergency');
+
+    res.json({
+      elderProfile: {
+        id: elder._id,
+        name: elder.name,
+        age: elder.age,
+        address: elder.address,
+        baselineHeartRateMin: elder.baselineHeartRateMin,
+        baselineHeartRateMax: elder.baselineHeartRateMax,
+        primaryContactName: elder.contacts?.find(c => c.category === 'family' || c.isPrimary)?.name || 'Family Contact',
+        primaryContactPhone: elder.contacts?.find(c => c.category === 'family' || c.isPrimary)?.phone || elder.contacts?.[0]?.phone || '',
+        doctorName: elder.doctorName || '',
+        doctorContact: elder.doctorContact || ''
+      },
+      checkupSuggested,
+      spikedRisks,
+      latestReading,
+      medicalHistory: medicalHistory || {
+        conditions: [],
+        medications: [],
+        allergies: [],
+        bloodGroup: 'Unknown',
+        doctorName: elder.doctorName || '',
+        doctorContact: elder.doctorContact || '',
+        pastSurgeries: []
+      },
+      recentVitals,
+      alertLogs
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error generating checkup summary', error: error.message });
   }
 });
 

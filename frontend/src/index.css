@@ -1167,4 +1167,109 @@ body {
   }
 }
 
+/* Radio Chips & Radio Cards for Vitals Control Room */
+.radio-chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
 
+.radio-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 20px;
+  background: #f1f5f9;
+  border: 1.5px solid #cbd5e1;
+  color: #334155;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.radio-chip input[type="radio"] {
+  accent-color: #0284c7;
+  cursor: pointer;
+}
+
+.radio-chip:hover {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+}
+
+.radio-chip.selected {
+  background: #e0f2fe;
+  border-color: #0284c7;
+  color: #0369a1;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.15);
+}
+
+.radio-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.65rem;
+  margin-top: 0.5rem;
+}
+
+.radio-card {
+  display: flex;
+  flex-direction: column;
+  padding: 0.75rem 0.9rem;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.radio-card input[type="radio"] {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.85rem;
+  accent-color: #0284c7;
+  width: 16px;
+  height: 16px;
+}
+
+.radio-card:hover {
+  border-color: #0284c7;
+  background: #f8fafc;
+}
+
+.radio-card.selected {
+  border-color: #0284c7;
+  background: #f0f9ff;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.12);
+}
+
+.radio-card-title {
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: #0f172a;
+  padding-right: 1.5rem;
+}
+
+.radio-card-desc {
+  font-size: 0.76rem;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.sensor-slider-card {
+  background: rgba(248, 250, 252, 0.8);
+  border: 1px solid #e2e8f0;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.sensor-slider-card:hover {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}

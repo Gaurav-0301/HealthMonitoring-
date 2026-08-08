@@ -6,6 +6,7 @@ import AlertLogItem from '../components/AlertLogItem';
 import VitalsSimulator from '../components/VitalsSimulator';
 import MedicalHistoryForm from '../components/MedicalHistoryForm';
 import EditElderModal from '../components/EditElderModal';
+import CheckupSummaryModal from '../components/CheckupSummaryModal';
 import api from '../services/api';
 import {
   ResponsiveContainer,
@@ -19,13 +20,14 @@ import {
   Bar,
   ReferenceArea
 } from 'recharts';
-import { Plus, Activity, Heart, AlertTriangle, RefreshCw, FileText, Zap } from 'lucide-react';
+import { Plus, Activity, Heart, AlertTriangle, RefreshCw, FileText, Zap, Stethoscope } from 'lucide-react';
 
 const Dashboard = () => {
   const { user } = useContext(AuthContext);
   const [elders, setElders] = useState([]);
   const [selectedElder, setSelectedElder] = useState(null);
   const [editingElder, setEditingElder] = useState(null);
+  const [showCheckupModal, setShowCheckupModal] = useState(false);
   const [vitalsHistory, setVitalsHistory] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -104,6 +106,14 @@ const Dashboard = () => {
   };
 
   const activeAlertCount = elders.filter(e => e.status === 'alert_triggered').length;
+  const latestReading = vitalsHistory.length > 0 ? vitalsHistory[vitalsHistory.length - 1] : null;
+  const isHighRiskSpike = latestReading && (
+    (latestReading.cardiacRisk || 0) >= 0.70 ||
+    (latestReading.respiratoryRisk || 0) >= 0.70 ||
+    (latestReading.feverRisk || 0) >= 0.70 ||
+    (latestReading.stressRisk || 0) >= 0.70 ||
+    (latestReading.metabolicRisk || 0) >= 0.70
+  );
 
   return (
     <div>
@@ -299,15 +309,83 @@ const Dashboard = () => {
                 ) : (
                   <div>
                     {/* ML Health Risk Screening & Smartwatch Vitals Panels */}
-                    {vitalsHistory.length > 0 && (() => {
-                      const latestReading = vitalsHistory[vitalsHistory.length - 1];
-                      return (
+                    {latestReading && (
+                      <div>
+                        {/* HIGH RISK SPIKE (> 0.70) CHECKUP SUGGESTION BANNER */}
+                        {isHighRiskSpike && (
+                          <div style={{
+                            background: 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)',
+                            color: '#ffffff',
+                            borderRadius: '12px',
+                            padding: '1.25rem 1.5rem',
+                            marginBottom: '1.5rem',
+                            boxShadow: '0 10px 25px -5px rgba(239, 68, 68, 0.4)',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            gap: '1rem',
+                            flexWrap: 'wrap'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                              <AlertTriangle size={32} color="#ffffff" className="spin" />
+                              <div>
+                                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: '#ffffff' }}>
+                                  🚨 High Risk Spike Detected (&gt; 70% Probability) — Medical Checkup Suggested
+                                </h3>
+                                <p style={{ fontSize: '0.88rem', margin: '4px 0 0', opacity: 0.95 }}>
+                                  Smartwatch telemetry indicates critical risk spikes. Fetch pre-existing conditions, vitals history, and alert logs to schedule a doctor consultation.
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => setShowCheckupModal(true)}
+                              style={{
+                                background: '#ffffff',
+                                color: '#b91c1c',
+                                fontWeight: 800,
+                                padding: '0.65rem 1.25rem',
+                                borderRadius: '8px',
+                                border: 'none',
+                                cursor: 'pointer',
+                                boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                fontSize: '0.9rem'
+                              }}
+                            >
+                              <Stethoscope size={18} /> View Checkup Medical Summary
+                            </button>
+                          </div>
+                        )}
+
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
                           {/* Risk Screening Card */}
                           <div className="glass-card" style={{ borderLeft: '5px solid var(--primary)', background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)' }}>
-                            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-primary)' }}>
-                              🛡️ ML Health Risk Screening Report
-                            </h3>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-primary)' }}>
+                                🛡️ ML Health Risk Screening Report
+                              </h3>
+                              <button
+                                onClick={() => setShowCheckupModal(true)}
+                                style={{
+                                  background: '#f1f5f9',
+                                  color: '#0f172a',
+                                  border: '1px solid #cbd5e1',
+                                  padding: '0.35rem 0.75rem',
+                                  borderRadius: '6px',
+                                  fontSize: '0.8rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '4px'
+                                }}
+                              >
+                                <FileText size={14} /> Full Checkup
+                              </button>
+                            </div>
+
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                               {[
                                 { name: 'Cardiac Risk', val: latestReading.cardiacRisk, color: '#f43f5e' },
@@ -320,7 +398,7 @@ const Dashboard = () => {
                                 let badgeText = 'Low Risk';
                                 let badgeColor = '#10b981';
                                 if ((risk.val || 0) >= 0.70) {
-                                  badgeText = 'High Risk';
+                                  badgeText = 'High Risk (>70%)';
                                   badgeColor = '#ef4444';
                                 } else if ((risk.val || 0) >= 0.40) {
                                   badgeText = 'Elevated Risk';
@@ -340,8 +418,23 @@ const Dashboard = () => {
                                 );
                               })}
                             </div>
-                            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '1.25rem', fontStyle: 'italic' }}>
-                              Predictions calculated in real-time from active band telemetry via disease-predictor screening API.
+
+                            {/* Flagged Indicators */}
+                            {latestReading.flagged && latestReading.flagged.length > 0 && (
+                              <div style={{ marginTop: '1rem', background: '#fef2f2', border: '1px solid #fca5a5', padding: '0.5rem 0.75rem', borderRadius: '6px' }}>
+                                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#991b1b', marginBottom: '4px' }}>⚠️ Flagged Telemetry Indicators:</div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                  {latestReading.flagged.map((tag, i) => (
+                                    <span key={i} style={{ background: '#ef4444', color: '#ffffff', padding: '1px 6px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 700 }}>
+                                      {tag}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '1rem', fontStyle: 'italic', borderTop: '1px solid #e2e8f0', paddingTop: '0.5rem' }}>
+                              {latestReading.disclaimer || 'Predictions calculated in real-time from active band telemetry via disease-predictor screening API.'}
                             </p>
                           </div>
 
@@ -390,8 +483,8 @@ const Dashboard = () => {
                             </div>
                           </div>
                         </div>
-                      );
-                    })()}
+                      </div>
+                    )}
 
                     {/* Historical Trends Charts */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
@@ -467,6 +560,13 @@ const Dashboard = () => {
             )}
           </div>
         </div>
+      )}
+      {/* Modal for Aggregated Medical Checkup Report */}
+      {showCheckupModal && selectedElder && (
+        <CheckupSummaryModal
+          elderId={selectedElder._id}
+          onClose={() => setShowCheckupModal(false)}
+        />
       )}
     </div>
   );

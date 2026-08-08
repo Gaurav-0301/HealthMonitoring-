@@ -21,31 +21,53 @@ const predictHealthRisks = async (vitalsData) => {
     sleep_efficiency: Number(vitalsData.sleepEfficiency !== undefined ? vitalsData.sleepEfficiency : (vitalsData.sleep_efficiency || 88))
   };
 
-  // 1. Try Calling the External Disease Prediction API if key exists
-  if (apiKey && apiKey !== 'your_api_key_here' && apiKey.trim() !== '') {
-    try {
-      console.log(`[DiseasePredictor] Querying Render ML model API for risks...`);
-      const response = await axios.post(DISEASE_PREDICTOR_URL, payload, {
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey.trim()
-        },
-        timeout: 6000 // 6 seconds timeout
-      });
+  // 1. Try Calling the External Disease Prediction API
+  try {
+    console.log(`[DiseasePredictor] Querying Render ML model API for risks...`);
+    const headers = { 'Content-Type': 'application/json' };
+    if (apiKey && apiKey !== 'your_api_key_here' && apiKey.trim() !== '') {
+      headers['x-api-key'] = apiKey.trim();
+    }
 
-      if (response.data && typeof response.data.cardiac === 'number') {
+    const response = await axios.post(DISEASE_PREDICTOR_URL, payload, {
+      headers,
+      timeout: 7000 // 7 seconds timeout
+    });
+
+    const data = response.data;
+    if (data) {
+      if (data.risks && typeof data.risks === 'object') {
+        const c = Number(data.risks.cardiac_risk ?? data.risks.cardiac ?? 0);
+        const r = Number(data.risks.respiratory_risk ?? data.risks.respiratory ?? 0);
+        const f = Number(data.risks.fever_infection_risk ?? data.risks.fever ?? 0);
+        const s = Number(data.risks.stress_fatigue_risk ?? data.risks.stress ?? 0);
+        const m = Number(data.risks.metabolic_lifestyle_risk ?? data.risks.metabolic ?? 0);
+
         return {
-          cardiac: Number(response.data.cardiac.toFixed(3)),
-          respiratory: Number(response.data.respiratory.toFixed(3)),
-          fever: Number(response.data.fever.toFixed(3)),
-          stress: Number(response.data.stress.toFixed(3)),
-          metabolic: Number(response.data.metabolic.toFixed(3)),
+          cardiac: Number(c.toFixed(3)),
+          respiratory: Number(r.toFixed(3)),
+          fever: Number(f.toFixed(3)),
+          stress: Number(s.toFixed(3)),
+          metabolic: Number(m.toFixed(3)),
+          flagged: Array.isArray(data.flagged) ? data.flagged : [],
+          disclaimer: data.disclaimer || 'This is a screening heuristic trained on synthetic data.',
+          source: 'render_api'
+        };
+      } else if (typeof data.cardiac === 'number') {
+        return {
+          cardiac: Number(data.cardiac.toFixed(3)),
+          respiratory: Number((data.respiratory || 0).toFixed(3)),
+          fever: Number((data.fever || 0).toFixed(3)),
+          stress: Number((data.stress || 0).toFixed(3)),
+          metabolic: Number((data.metabolic || 0).toFixed(3)),
+          flagged: Array.isArray(data.flagged) ? data.flagged : [],
+          disclaimer: data.disclaimer || 'This is a screening heuristic trained on synthetic data.',
           source: 'render_api'
         };
       }
-    } catch (error) {
-      console.warn(`[DiseasePredictor API Warning] Call failed (${error.message}). Falling back to local classifier.`);
     }
+  } catch (error) {
+    console.warn(`[DiseasePredictor API Warning] Call failed (${error.message}). Falling back to local classifier.`);
   }
 
   // 2. Rule-based Classifier Fallback (Matches exact test patterns and scales logically)
@@ -179,6 +201,8 @@ const predictHealthRisks = async (vitalsData) => {
     fever: Number(fever.toFixed(3)),
     stress: Number(stress.toFixed(3)),
     metabolic: Number(metabolic.toFixed(3)),
+    flagged: [],
+    disclaimer: 'This is a screening heuristic trained on synthetic data. Not a medical diagnosis.',
     source: 'local_model'
   };
 };

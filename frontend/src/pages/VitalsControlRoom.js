@@ -7,8 +7,19 @@ const VitalsControlRoom = () => {
   const { user, login } = useContext(AuthContext);
   const [elders, setElders] = useState([]);
   const [selectedElderId, setSelectedElderId] = useState('');
-  const [heartRate, setHeartRate] = useState(72);
-  const [steps, setSteps] = useState(100);
+  const [selectedPreset, setSelectedPreset] = useState('');
+  
+  // 9 Canonical Band Sensors State
+  const [heartRate, setHeartRate] = useState(78);
+  const [restingHeartRate, setRestingHeartRate] = useState(62);
+  const [heartRateSd, setHeartRateSd] = useState(7);
+  const [spo2Avg, setSpo2Avg] = useState(97);
+  const [spo2Min, setSpo2Min] = useState(95);
+  const [skinTemp, setSkinTemp] = useState(33.8);
+  const [steps, setSteps] = useState(4200);
+  const [sleepHours, setSleepHours] = useState(6.5);
+  const [sleepEfficiency, setSleepEfficiency] = useState(85);
+
   const [loading, setLoading] = useState(false);
   const [dispatchLog, setDispatchLog] = useState([]);
   const [activeCallModal, setActiveCallModal] = useState(null);
@@ -53,7 +64,15 @@ const VitalsControlRoom = () => {
       const response = await api.post(`/vitals/${selectedElderId}/mock-simulate`, {
         simulatePreset: preset,
         heartRate: preset ? null : Number(heartRate),
-        steps: preset ? null : Number(steps)
+        restingHeartRate: preset ? null : Number(restingHeartRate),
+        heartRateSd: preset ? null : Number(heartRateSd),
+        spo2Avg: preset ? null : Number(spo2Avg),
+        spo2Min: preset ? null : Number(spo2Min),
+        skinTemp: preset ? null : Number(skinTemp),
+        stepsToday: preset ? null : Number(steps),
+        steps: preset ? null : Number(steps),
+        sleepHours: preset ? null : Number(sleepHours),
+        sleepEfficiency: preset ? null : Number(sleepEfficiency)
       });
 
       const { anomalyReport, escalationTriggered, escalationLog } = response.data;
@@ -106,7 +125,7 @@ const VitalsControlRoom = () => {
           type: 'normal',
           title: `📊 VITALS DATASTREAM UPDATE`,
           recipient: `Elder: ${elderName}`,
-          body: `Vitals logged cleanly: Heart Rate = ${heartRate} BPM, Steps = ${steps}. Status: NORMAL (Within baseline range 65-95 BPM).`,
+          body: `Vitals logged cleanly: HR=${preset ? 'Preset' : heartRate} BPM, SpO2=${preset ? 'Preset' : spo2Avg}%, Temp=${preset ? 'Preset' : skinTemp}°C. ML Model Status: Synced.`,
           status: 'Synced to Database VitalsHistory',
           timestamp
         });
@@ -131,7 +150,7 @@ const VitalsControlRoom = () => {
   };
 
   return (
-    <div style={{ maxWidth: '1100px', margin: '1rem auto' }}>
+    <div style={{ maxWidth: '1200px', margin: '1rem auto' }}>
       {/* Header */}
       <div className="page-header">
         <div>
@@ -139,7 +158,7 @@ const VitalsControlRoom = () => {
             <Zap color="var(--accent-cyan)" size={28} /> Vitals Control Room & Emergency Trigger Simulator
           </h1>
           <p className="page-subtitle">
-            Manipulate live heart rate / step count vitals and simulate real-time Twilio Voice calls, SMS & parallel escalation.
+            Manipulate 9 live band sensor sliders, select preset radio scenarios, and test real-time ML risk screening & parallel escalation.
           </p>
         </div>
 
@@ -166,118 +185,263 @@ const VitalsControlRoom = () => {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
-        {/* LEFT COLUMN: Vitals Sliders & Controls */}
+      {/* SECTION 1: RADIO BUTTON ELDER SELECTION */}
+      <div className="glass-card" style={{ marginBottom: '1.5rem' }}>
+        <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          👵 Select Monitored Elder Profile (Radio Selection):
+        </h3>
+        <div className="radio-chip-group">
+          {elders.length === 0 && <span style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>No elders found. Click "Seed Demo Data" above!</span>}
+          {elders.map(e => (
+            <label key={e._id} className={`radio-chip ${selectedElderId === e._id ? 'selected' : ''}`}>
+              <input
+                type="radio"
+                name="selectedElderRadio"
+                value={e._id}
+                checked={selectedElderId === e._id}
+                onChange={() => setSelectedElderId(e._id)}
+              />
+              <span>👵 <strong>{e.name}</strong> ({e.age} yrs) • Baseline HR: {e.baselineHeartRateMin}-{e.baselineHeartRateMax} BPM</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* SECTION 2: RADIO BUTTON PRESET SCENARIOS */}
+      <div className="glass-card" style={{ marginBottom: '1.5rem' }}>
+        <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          🔘 Instant Smartwatch Simulation Scenarios (Radio Button Cards):
+        </h3>
+        <div className="radio-card-grid">
+          {[
+            { id: 'healthy', title: '🟢 Healthy Baseline', desc: 'All Low Risk (0.3% Cardiac, 98% SpO2)' },
+            { id: 'cardiac', title: '❤️ Cardiac Risk Pattern', desc: '94.4% Cardiac Spike (118 BPM, 16ms SD)' },
+            { id: 'respiratory', title: '🫁 Respiratory Risk', desc: '79% Respiratory Spike (SpO2 drop to 87%)' },
+            { id: 'fever', title: '🌡️ Fever / Infection', desc: '82.2% Fever Spike (Temp 36.8°C, HR 105)' },
+            { id: 'stress', title: '🧠 Stress / Fatigue', desc: '87.3% Stress Spike (HRV 3ms, 4.5h Sleep)' },
+            { id: 'metabolic', title: '🍏 Metabolic / Lifestyle', desc: '73.8% Metabolic Spike (1800 Steps)' },
+            { id: 'worst_case', title: '🚨 Worst-Case Multi-Risk', desc: 'Multi-organ risk spike (128 BPM, 37.4°C)' },
+            { id: 'spike_3_readings', title: '⚡ Anomaly Escalation', desc: '3 Consecutive Heart Rate Spikes' },
+            { id: 'inactivity_4h', title: '📴 Daytime Inactivity', desc: '4-Hour Continuous Zero Movement' }
+          ].map(p => (
+            <label key={p.id} className={`radio-card ${selectedPreset === p.id ? 'selected' : ''}`}>
+              <input
+                type="radio"
+                name="presetScenarioRadio"
+                value={p.id}
+                checked={selectedPreset === p.id}
+                onChange={() => {
+                  setSelectedPreset(p.id);
+                  handleSimulateVitals(p.id);
+                }}
+              />
+              <div className="radio-card-title">{p.title}</div>
+              <div className="radio-card-desc">{p.desc}</div>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1.5rem' }}>
+        {/* LEFT COLUMN: All 9 Band Sensor Range Sliders */}
         <div className="glass-card">
-          <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Activity color="var(--primary)" /> Vitals Manipulation Panel
+          <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Activity color="var(--primary)" /> Smartwatch 9-Sensor Telemetry Controls (Demo Range Buttons)
           </h3>
 
-          <div className="form-group">
-            <label className="form-label">Select Monitored Elder Profile:</label>
-            <select
-              className="form-select"
-              value={selectedElderId}
-              onChange={(e) => setSelectedElderId(e.target.value)}
-            >
-              {elders.length === 0 && <option value="">No elders found. Click "Seed Demo Data" above!</option>}
-              {elders.map(e => (
-                <option key={e._id} value={e._id}>
-                  {e.name} (Age {e.age}) — Baseline HR: {e.baselineHeartRateMin}-{e.baselineHeartRateMax} BPM
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Heart Rate Slider */}
-          <div className="form-group" style={{ background: 'rgba(0,0,0,0.25)', padding: '1.25rem', borderRadius: '12px', marginBottom: '1.25rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-              <label className="form-label" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Heart size={18} color="#f43f5e" /> Heart Rate Reading:
-              </label>
-              <span style={{
-                fontSize: '1.4rem',
-                fontWeight: 800,
-                color: heartRate > 95 || heartRate < 60 ? '#ef4444' : '#10b981',
-                fontFamily: 'var(--font-mono)'
-              }}>
-                {heartRate} BPM
-              </span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
+            {/* 1. Heart Rate Slider */}
+            <div className="sensor-slider-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <label style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Heart size={16} color="#f43f5e" /> 1. Heart Rate (Instant)
+                </label>
+                <span style={{ fontWeight: 800, color: heartRate > 95 || heartRate < 60 ? '#ef4444' : '#10b981', fontSize: '1.1rem', fontFamily: 'var(--font-mono)' }}>
+                  {heartRate} BPM
+                </span>
+              </div>
+              <input
+                type="range"
+                min="40"
+                max="200"
+                value={heartRate}
+                onChange={(e) => { setSelectedPreset(''); setHeartRate(e.target.value); }}
+                style={{ width: '100%', accentColor: heartRate > 95 ? '#ef4444' : '#10b981', cursor: 'pointer' }}
+              />
             </div>
 
-            <input
-              type="range"
-              min="40"
-              max="180"
-              value={heartRate}
-              onChange={(e) => setHeartRate(e.target.value)}
-              style={{ width: '100%', accentColor: heartRate > 95 ? '#ef4444' : '#10b981', cursor: 'pointer' }}
-            />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '4px', flexWrap: 'wrap', gap: '4px' }}>
-              <span>40 BPM (Bradycardia)</span>
-              <span>65-95 BPM (Normal Baseline)</span>
-              <span>180 BPM (Critical Tachycardia)</span>
-            </div>
-          </div>
-
-          {/* Step Count Slider */}
-          <div className="form-group" style={{ background: 'rgba(0,0,0,0.25)', padding: '1.25rem', borderRadius: '12px', marginBottom: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-              <label className="form-label" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Activity size={18} color="#06b6d4" /> Step Movement Delta:
-              </label>
-              <span style={{ fontSize: '1.4rem', fontWeight: 800, color: '#06b6d4', fontFamily: 'var(--font-mono)' }}>
-                {steps} steps
-              </span>
+            {/* 2. Resting Heart Rate Slider */}
+            <div className="sensor-slider-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <label style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a' }}>
+                  ❤️ 2. Resting Heart Rate
+                </label>
+                <span style={{ fontWeight: 800, color: restingHeartRate > 85 ? '#f59e0b' : '#0f172a', fontSize: '1.1rem', fontFamily: 'var(--font-mono)' }}>
+                  {restingHeartRate} BPM
+                </span>
+              </div>
+              <input
+                type="range"
+                min="40"
+                max="120"
+                value={restingHeartRate}
+                onChange={(e) => { setSelectedPreset(''); setRestingHeartRate(e.target.value); }}
+                style={{ width: '100%', accentColor: '#3b82f6', cursor: 'pointer' }}
+              />
             </div>
 
-            <input
-              type="range"
-              min="0"
-              max="500"
-              value={steps}
-              onChange={(e) => setSteps(e.target.value)}
-              style={{ width: '100%', accentColor: '#06b6d4', cursor: 'pointer' }}
-            />
+            {/* 3. Heart Rate SD (HRV) Slider */}
+            <div className="sensor-slider-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <label style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a' }}>
+                  📈 3. HR SD (Variability)
+                </label>
+                <span style={{ fontWeight: 800, color: heartRateSd < 4 || heartRateSd > 12 ? '#f59e0b' : '#0f172a', fontSize: '1.1rem', fontFamily: 'var(--font-mono)' }}>
+                  {heartRateSd} ms
+                </span>
+              </div>
+              <input
+                type="range"
+                min="1"
+                max="40"
+                value={heartRateSd}
+                onChange={(e) => { setSelectedPreset(''); setHeartRateSd(e.target.value); }}
+                style={{ width: '100%', accentColor: '#8b5cf6', cursor: 'pointer' }}
+              />
+            </div>
+
+            {/* 4. SpO2 Avg Slider */}
+            <div className="sensor-slider-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <label style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a' }}>
+                  🫁 4. SpO2 Average
+                </label>
+                <span style={{ fontWeight: 800, color: spo2Avg < 94 ? '#ef4444' : '#10b981', fontSize: '1.1rem', fontFamily: 'var(--font-mono)' }}>
+                  {spo2Avg}%
+                </span>
+              </div>
+              <input
+                type="range"
+                min="70"
+                max="100"
+                value={spo2Avg}
+                onChange={(e) => { setSelectedPreset(''); setSpo2Avg(e.target.value); }}
+                style={{ width: '100%', accentColor: spo2Avg < 94 ? '#ef4444' : '#10b981', cursor: 'pointer' }}
+              />
+            </div>
+
+            {/* 5. SpO2 Min Slider */}
+            <div className="sensor-slider-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <label style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a' }}>
+                  🩸 5. SpO2 Minimum Drop
+                </label>
+                <span style={{ fontWeight: 800, color: spo2Min < 92 ? '#ef4444' : '#10b981', fontSize: '1.1rem', fontFamily: 'var(--font-mono)' }}>
+                  {spo2Min}%
+                </span>
+              </div>
+              <input
+                type="range"
+                min="60"
+                max="100"
+                value={spo2Min}
+                onChange={(e) => { setSelectedPreset(''); setSpo2Min(e.target.value); }}
+                style={{ width: '100%', accentColor: spo2Min < 92 ? '#ef4444' : '#0284c7', cursor: 'pointer' }}
+              />
+            </div>
+
+            {/* 6. Skin Temperature Slider */}
+            <div className="sensor-slider-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <label style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a' }}>
+                  🌡️ 6. Skin Temperature
+                </label>
+                <span style={{ fontWeight: 800, color: skinTemp > 36.2 ? '#ef4444' : '#0f172a', fontSize: '1.1rem', fontFamily: 'var(--font-mono)' }}>
+                  {skinTemp} °C
+                </span>
+              </div>
+              <input
+                type="range"
+                min="32.0"
+                max="41.0"
+                step="0.1"
+                value={skinTemp}
+                onChange={(e) => { setSelectedPreset(''); setSkinTemp(e.target.value); }}
+                style={{ width: '100%', accentColor: skinTemp > 36.2 ? '#ef4444' : '#e11d48', cursor: 'pointer' }}
+              />
+            </div>
+
+            {/* 7. Steps Today Slider */}
+            <div className="sensor-slider-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <label style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a' }}>
+                  👟 7. Steps Today
+                </label>
+                <span style={{ fontWeight: 800, color: '#06b6d4', fontSize: '1.1rem', fontFamily: 'var(--font-mono)' }}>
+                  {steps} steps
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="20000"
+                step="100"
+                value={steps}
+                onChange={(e) => { setSelectedPreset(''); setSteps(e.target.value); }}
+                style={{ width: '100%', accentColor: '#06b6d4', cursor: 'pointer' }}
+              />
+            </div>
+
+            {/* 8. Sleep Hours Slider */}
+            <div className="sensor-slider-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <label style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a' }}>
+                  🌙 8. Sleep Duration
+                </label>
+                <span style={{ fontWeight: 800, color: sleepHours < 5.5 ? '#f59e0b' : '#0f172a', fontSize: '1.1rem', fontFamily: 'var(--font-mono)' }}>
+                  {sleepHours} hrs
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0.0"
+                max="14.0"
+                step="0.5"
+                value={sleepHours}
+                onChange={(e) => { setSelectedPreset(''); setSleepHours(e.target.value); }}
+                style={{ width: '100%', accentColor: '#7e22ce', cursor: 'pointer' }}
+              />
+            </div>
+
+            {/* 9. Sleep Efficiency Slider */}
+            <div className="sensor-slider-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <label style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a' }}>
+                  ⚡ 9. Sleep Efficiency
+                </label>
+                <span style={{ fontWeight: 800, color: sleepEfficiency < 70 ? '#f59e0b' : '#10b981', fontSize: '1.1rem', fontFamily: 'var(--font-mono)' }}>
+                  {sleepEfficiency}%
+                </span>
+              </div>
+              <input
+                type="range"
+                min="30"
+                max="100"
+                value={sleepEfficiency}
+                onChange={(e) => { setSelectedPreset(''); setSleepEfficiency(e.target.value); }}
+                style={{ width: '100%', accentColor: '#10b981', cursor: 'pointer' }}
+              />
+            </div>
           </div>
 
           <button
-            className="btn btn-secondary"
+            className="btn btn-primary"
             disabled={loading}
             onClick={() => handleSimulateVitals(null)}
-            style={{ width: '100%', marginBottom: '1.5rem', borderColor: 'var(--primary)' }}
+            style={{ width: '100%', padding: '0.75rem', fontSize: '0.95rem', fontWeight: 800 }}
           >
-            <Send size={16} /> Send Custom Reading Stream ({heartRate} BPM, {steps} steps)
+            <Send size={18} style={{ display: 'inline', marginRight: '6px' }} /> Ingest Live Telemetry Stream ({heartRate} BPM, {spo2Avg}% SpO2, {skinTemp}°C)
           </button>
-
-          {/* Preset Instant Trigger Dropdown */}
-          <h4 style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
-            Instant Smartwatch Simulation Scenarios:
-          </h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            <select 
-              className="form-select" 
-              style={{ width: '100%', padding: '0.65rem 1rem', fontSize: '0.9rem', borderRadius: '8px' }}
-              onChange={(e) => {
-                if (e.target.value) {
-                  handleSimulateVitals(e.target.value);
-                  e.target.value = ''; // Reset select
-                }
-              }}
-              disabled={loading}
-            >
-              <option value="">-- Choose Preset Scenario --</option>
-              <option value="healthy">🟢 Case 1: Healthy Baseline (All Low Risks)</option>
-              <option value="cardiac">❤️ Case 2: Cardiac Risk Pattern</option>
-              <option value="respiratory">🫁 Case 3: Respiratory Risk Pattern (SpO2 Drop)</option>
-              <option value="fever">🌡️ Case 4: Fever / Infection Pattern</option>
-              <option value="stress">🧠 Case 5: Stress / Fatigue Pattern</option>
-              <option value="metabolic">🍏 Case 6: Metabolic / Lifestyle Risk</option>
-              <option value="worst_case">🚨 Case 7: Worst-Case Multi-Risk</option>
-              <option value="spike_3_readings">⚡ Anomaly: 3 Heart Rate Spikes (Escalation)</option>
-              <option value="inactivity_4h">📴 Anomaly: 4-Hour daytime inactivity (Escalation)</option>
-            </select>
-          </div>
         </div>
 
         {/* RIGHT COLUMN: Live Communication Dispatch Log */}

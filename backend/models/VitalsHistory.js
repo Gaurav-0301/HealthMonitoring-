@@ -67,6 +67,13 @@ const vitalsHistorySchema = new mongoose.Schema({
     type: Number,
     default: 0.000
   },
+  flagged: [{
+    type: String
+  }],
+  disclaimer: {
+    type: String,
+    default: 'This is a screening heuristic trained on synthetic data.'
+  },
   source: {
     type: String,
     enum: ['google_fit', 'apple_health', 'mock_simulator'],

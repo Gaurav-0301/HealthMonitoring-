@@ -83,7 +83,17 @@ const NavigationBar = () => {
           {user.role === 'family' && (
             <>
               <Link to="/dashboard" className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`}>
-                <Heart size={16} style={{ display: 'inline', marginRight: '4px' }} /> Dashboard & Control Room
+                <Heart size={16} style={{ display: 'inline', marginRight: '4px' }} /> Dashboard
+              </Link>
+              <Link to="/control-room" className={`nav-link ${location.pathname === '/control-room' ? 'active' : ''}`} style={{
+                background: 'linear-gradient(135deg, rgba(2, 132, 199, 0.12), rgba(13, 148, 136, 0.12))',
+                border: '1px solid #0284c7',
+                color: '#0284c7',
+                borderRadius: '8px',
+                padding: '0.35rem 0.75rem',
+                fontWeight: 800
+              }}>
+                <Zap size={16} style={{ display: 'inline', marginRight: '4px' }} /> 🎛️ Vitals Control
               </Link>
               <Link to="/onboarding" className={`nav-link ${location.pathname === '/onboarding' ? 'active' : ''}`}>
                 <PlusCircle size={16} style={{ display: 'inline', marginRight: '4px' }} /> Add Elder
@@ -139,6 +149,9 @@ const NavigationBar = () => {
           <>
             <Link to="/dashboard" className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>
               <Heart size={16} /> Dashboard
+            </Link>
+            <Link to="/control-room" className={`nav-link ${location.pathname === '/control-room' ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)} style={{ color: '#0284c7', fontWeight: 800 }}>
+              <Zap size={16} /> 🎛️ Vitals Control
             </Link>
             <Link to="/onboarding" className={`nav-link ${location.pathname === '/onboarding' ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>
               <PlusCircle size={16} /> Add Elder Relatives
