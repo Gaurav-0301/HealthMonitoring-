@@ -1,35 +1,70 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 import api from '../services/api';
 
-const AuthContext = createContext();
+export const AuthContext = createContext();
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem('circleback_user');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [token, setToken] = useState(() => localStorage.getItem('circleback_token') || null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (token) {
+      api.get('/auth/me')
+        .then((res) => {
+          setUser(res.data);
+          localStorage.setItem('circleback_user', JSON.stringify(res.data));
+        })
+        .catch(() => {
+          logout();
+        })
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+  }, [token]);
 
   const login = async (email, password) => {
-    const res = await api.post('/auth/login', { email, password });
-    localStorage.setItem('token', res.data.token);
-    setUser(res.data.user);
-    return res.data;
+    const response = await api.post('/auth/login', { email, password });
+    const { token: jwtToken, user: userData } = response.data;
+    setToken(jwtToken);
+    setUser(userData);
+    localStorage.setItem('circleback_token', jwtToken);
+    localStorage.setItem('circleback_user', JSON.stringify(userData));
+    return userData;
   };
 
   const signup = async (formData) => {
-    const res = await api.post('/auth/signup', formData);
-    return res.data;
+    const response = await api.post('/auth/signup', formData);
+    const { token: jwtToken, user: userData } = response.data;
+    setToken(jwtToken);
+    setUser(userData);
+    localStorage.setItem('circleback_token', jwtToken);
+    localStorage.setItem('circleback_user', JSON.stringify(userData));
+    return userData;
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
+    setToken(null);
     setUser(null);
+    localStorage.removeItem('circleback_token');
+    localStorage.removeItem('circleback_user');
+  };
+
+  const updateUserSubscription = (tier) => {
+    if (user) {
+      const updated = { ...user, subscriptionTier: tier };
+      setUser(updated);
+      localStorage.setItem('circleback_user', JSON.stringify(updated));
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, signup, logout, updateUserSubscription }}>
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  return useContext(AuthContext);
-}
+};
