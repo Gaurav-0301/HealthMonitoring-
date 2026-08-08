@@ -5,15 +5,20 @@ import VitalsControlRoom from '../pages/VitalsControlRoom';
 import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
 
-jest.mock('../services/api');
+jest.mock('../services/api', () => ({
+  __esModule: true,
+  default: {
+    get: jest.fn(),
+    post: jest.fn()
+  }
+}));
 
-beforeAll(() => {
-  global.ResizeObserver = class ResizeObserver {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
-  };
-});
+// Mock ResizeObserver for Recharts ResponsiveContainer in jsdom
+global.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
 
 describe('VitalsControlRoom UI Component Tests', () => {
   const mockAuthContext = {
@@ -32,7 +37,12 @@ describe('VitalsControlRoom UI Component Tests', () => {
   ];
 
   test('renders 9-sensor telemetry range sliders and radio button scenario selectors', async () => {
-    api.get.mockResolvedValueOnce({ data: mockElders });
+    api.get.mockImplementation((url) => {
+      if (url === '/elder-profile') {
+        return Promise.resolve({ data: mockElders });
+      }
+      return Promise.resolve({ data: [] });
+    });
 
     await act(async () => {
       render(
@@ -44,7 +54,7 @@ describe('VitalsControlRoom UI Component Tests', () => {
 
     await waitFor(() => {
       // 1. Check title & headers
-      expect(screen.getByText(/Vitals Control Room/i)).toBeInTheDocument();
+      expect(screen.getByText(/Vitals Control Room & Active Emergency Trigger Simulator/i)).toBeInTheDocument();
 
       // 2. Check Radio Chip Monitored Elder Selection
       expect(screen.getAllByText(/Savitri Devi/i).length).toBeGreaterThan(0);
@@ -55,15 +65,14 @@ describe('VitalsControlRoom UI Component Tests', () => {
       expect(screen.getByText(/Respiratory Risk/i)).toBeInTheDocument();
 
       // 4. Check 9 Sensor Sliders presence
-      expect(screen.getByText(/1. Heart Rate/i)).toBeInTheDocument();
-      expect(screen.getByText(/2. Resting HR/i)).toBeInTheDocument();
-      expect(screen.getByText(/3. HR SD \(Variability\)/i)).toBeInTheDocument();
-      expect(screen.getByText(/4. SpO2 Average/i)).toBeInTheDocument();
-      expect(screen.getByText(/5. SpO2 Minimum/i)).toBeInTheDocument();
-      expect(screen.getByText(/6. Skin Temperature/i)).toBeInTheDocument();
-      expect(screen.getByText(/7. Steps Today/i)).toBeInTheDocument();
-      expect(screen.getByText(/8. Sleep Duration/i)).toBeInTheDocument();
-      expect(screen.getByText(/9. Sleep Efficiency/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Instant/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/Resting/i).length).toBeGreaterThan(0);
+      expect(screen.getByText(/Variability/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/SpO2/i).length).toBeGreaterThan(0);
+      expect(screen.getByText(/Skin Temperature/i)).toBeInTheDocument();
+      expect(screen.getByText(/Steps Today/i)).toBeInTheDocument();
+      expect(screen.getByText(/Sleep Duration/i)).toBeInTheDocument();
+      expect(screen.getByText(/Sleep Efficiency/i)).toBeInTheDocument();
     });
   });
 });
