@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { elderService, alertService, vitalsService } from '../services/api';
+import api from '../services/api';
 import {
   Phone,
   PhoneCall,
@@ -17,7 +17,8 @@ import {
   Clock,
   Zap,
   RefreshCw,
-  Volume2
+  Volume2,
+  Radio
 } from 'lucide-react';
 
 const ElderDashboard = () => {
@@ -55,8 +56,8 @@ const ElderDashboard = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Try fetching elders associated with user or first available elder profile
-      const eldersRes = await elderService.getAll();
+      // Try fetching elders associated with user
+      const eldersRes = await api.get('/elder-profile');
       const elders = eldersRes.data || [];
       const currentElder = elders.length > 0 ? elders[0] : null;
 
@@ -64,7 +65,7 @@ const ElderDashboard = () => {
         setElderProfile(currentElder);
         // Fetch latest vitals if available
         try {
-          const vRes = await vitalsService.getHistory(currentElder._id);
+          const vRes = await api.get(`/vitals/history/${currentElder._id}`);
           const history = vRes.data || [];
           if (history.length > 0) {
             const latest = history[0];
@@ -81,7 +82,7 @@ const ElderDashboard = () => {
 
         // Fetch alerts
         try {
-          const aRes = await alertService.getForElder(currentElder._id);
+          const aRes = await api.get(`/alerts/elder/${currentElder._id}`);
           setAlerts(aRes.data || []);
         } catch (e) {
           console.warn('Could not fetch alerts');
@@ -156,7 +157,7 @@ const ElderDashboard = () => {
 
     // Also push a real alert if elder ID exists
     if (elderProfile?._id) {
-      alertService.create({
+      api.post('/alerts', {
         elderId: elderProfile._id,
         type: 'MANUAL_SOS',
         severity: 'CRITICAL',
