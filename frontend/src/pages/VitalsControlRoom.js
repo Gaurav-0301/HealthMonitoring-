@@ -166,7 +166,7 @@ const VitalsControlRoom = () => {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(480px, 1fr))', gap: '1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
         {/* LEFT COLUMN: Vitals Sliders & Controls */}
         <div className="glass-card">
           <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -213,7 +213,7 @@ const VitalsControlRoom = () => {
               onChange={(e) => setHeartRate(e.target.value)}
               style={{ width: '100%', accentColor: heartRate > 95 ? '#ef4444' : '#10b981', cursor: 'pointer' }}
             />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '4px', flexWrap: 'wrap', gap: '4px' }}>
               <span>40 BPM (Bradycardia)</span>
               <span>65-95 BPM (Normal Baseline)</span>
               <span>180 BPM (Critical Tachycardia)</span>

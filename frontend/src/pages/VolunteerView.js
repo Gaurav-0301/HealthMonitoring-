@@ -144,7 +144,7 @@ const VolunteerView = () => {
         </div>
 
         {/* Availability Toggle */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--bg-card)', padding: '0.5rem 1rem', borderRadius: '12px', border: '1px solid var(--bg-card-border)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--bg-card)', padding: '0.5rem 1rem', borderRadius: '12px', border: '1px solid var(--bg-card-border)', flexWrap: 'wrap' }}>
           <Power size={18} color={volunteerProfile.availabilityStatus === 'available' ? '#10b981' : '#64748b'} />
           <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>Status:</span>
           {['available', 'busy', 'offline'].map((st) => (

@@ -238,7 +238,7 @@ const Dashboard = () => {
               </div>
 
               {/* Tabs */}
-              <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(0,0,0,0.3)', padding: '4px', borderRadius: '10px' }}>
+              <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(0,0,0,0.3)', padding: '4px', borderRadius: '10px', flexWrap: 'wrap' }}>
                 <button
                   className={`btn ${activeTab === 'vitals' ? 'btn-primary' : 'btn-secondary'}`}
                   style={{ padding: '0.4rem 0.85rem', fontSize: '0.85rem' }}
@@ -297,7 +297,7 @@ const Dashboard = () => {
                     No vitals history recorded yet. Use the Vitals Simulation Toolbar above to generate demo readings!
                   </div>
                 ) : (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: '2rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
                     {/* Heart Rate BPM Chart */}
                     <div>
                       <h4 style={{ fontSize: '1rem', marginBottom: '1rem', color: '#f43f5e', display: 'flex', alignItems: 'center', gap: '6px' }}>

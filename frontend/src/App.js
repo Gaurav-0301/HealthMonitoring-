@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 import { AuthContext, AuthProvider } from './context/AuthContext';
 
@@ -12,7 +12,7 @@ import AdminPanel from './pages/AdminPanel';
 import VitalsControlRoom from './pages/VitalsControlRoom';
 import ElderDashboard from './pages/ElderDashboard';
 
-import { Shield, Heart, PlusCircle, CreditCard, Users, LogOut, UserCheck, Zap, PhoneCall } from 'lucide-react';
+import { Shield, Heart, PlusCircle, CreditCard, Users, LogOut, UserCheck, Zap, PhoneCall, Menu, X } from 'lucide-react';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, loading } = useContext(AuthContext);
@@ -41,6 +41,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 const NavigationBar = () => {
   const { user, logout } = useContext(AuthContext);
   const location = useLocation();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   if (!user) return null;
 
@@ -62,61 +63,117 @@ const NavigationBar = () => {
   };
 
   return (
-    <nav className="navbar">
-      <Link to={getHomePath()} className="brand-logo">
-        <div className="brand-icon">
-          <Shield size={22} />
-        </div>
-        <span>CarePulse</span>
-      </Link>
+    <>
+      <nav className="navbar">
+        <Link to={getHomePath()} className="brand-logo" onClick={() => setIsMenuOpen(false)}>
+          <div className="brand-icon">
+            <Shield size={22} />
+          </div>
+          <span>CarePulse</span>
+        </Link>
 
-      <div className="nav-links">
+        {/* Desktop Links (Hidden on mobile via CSS) */}
+        <div className="nav-links">
+          {user.role === 'elder' && (
+            <Link to="/elder-dashboard" className={`nav-link ${location.pathname === '/elder-dashboard' ? 'active' : ''}`} style={{ color: '#E11D48', fontWeight: 700 }}>
+              <PhoneCall size={16} style={{ display: 'inline', marginRight: '4px' }} /> Elder Care Mode
+            </Link>
+          )}
+
+          {user.role === 'family' && (
+            <>
+              <Link to="/dashboard" className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`}>
+                <Heart size={16} style={{ display: 'inline', marginRight: '4px' }} /> Dashboard & Control Room
+              </Link>
+              <Link to="/onboarding" className={`nav-link ${location.pathname === '/onboarding' ? 'active' : ''}`}>
+                <PlusCircle size={16} style={{ display: 'inline', marginRight: '4px' }} /> Add Elder
+              </Link>
+              <Link to="/billing" className={`nav-link ${location.pathname === '/billing' ? 'active' : ''}`}>
+                <CreditCard size={16} style={{ display: 'inline', marginRight: '4px' }} /> Subscription
+              </Link>
+            </>
+          )}
+
+          {user.role === 'volunteer' && (
+            <Link to="/volunteer" className={`nav-link ${location.pathname === '/volunteer' ? 'active' : ''}`}>
+              <Users size={16} style={{ display: 'inline', marginRight: '4px' }} /> Volunteer Desk
+            </Link>
+          )}
+
+          {user.role === 'admin' && (
+            <Link to="/admin" className={`nav-link ${location.pathname === '/admin' ? 'active' : ''}`}>
+              <UserCheck size={16} style={{ display: 'inline', marginRight: '4px' }} /> Admin Operations
+            </Link>
+          )}
+
+          {/* Tier Badge */}
+          <span className={getTierClass(user.subscriptionTier)}>
+            {user.subscriptionTier?.replace('_', ' ') || 'Free'} Plan
+          </span>
+
+          <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+            {user.name} ({user.role})
+          </span>
+
+          <button className="btn btn-secondary" onClick={logout} style={{ padding: '0.35rem 0.75rem', fontSize: '0.85rem' }}>
+            <LogOut size={14} /> Exit
+          </button>
+        </div>
+
+        {/* Hamburger Menu Icon (Only visible on mobile via CSS) */}
+        <button className="hamburger-btn" onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label="Toggle menu">
+          {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+      </nav>
+
+      {/* Mobile Menu Drawer Layout */}
+      <div className={`nav-drawer-overlay ${isMenuOpen ? 'open' : ''}`} onClick={() => setIsMenuOpen(false)} />
+      <div className={`nav-drawer ${isMenuOpen ? 'open' : ''}`}>
         {user.role === 'elder' && (
-          <Link to="/elder-dashboard" className={`nav-link ${location.pathname === '/elder-dashboard' ? 'active' : ''}`} style={{ color: '#E11D48', fontWeight: 700 }}>
-            <PhoneCall size={16} style={{ display: 'inline', marginRight: '4px' }} /> Elder Care Mode
+          <Link to="/elder-dashboard" className={`nav-link ${location.pathname === '/elder-dashboard' ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)} style={{ color: '#E11D48', fontWeight: 700 }}>
+            <PhoneCall size={16} /> Elder Care Mode
           </Link>
         )}
 
         {user.role === 'family' && (
           <>
-            <Link to="/dashboard" className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`}>
-              <Heart size={16} style={{ display: 'inline', marginRight: '4px' }} /> Dashboard & Control Room
+            <Link to="/dashboard" className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>
+              <Heart size={16} /> Dashboard
             </Link>
-            <Link to="/onboarding" className={`nav-link ${location.pathname === '/onboarding' ? 'active' : ''}`}>
-              <PlusCircle size={16} style={{ display: 'inline', marginRight: '4px' }} /> Add Elder
+            <Link to="/onboarding" className={`nav-link ${location.pathname === '/onboarding' ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>
+              <PlusCircle size={16} /> Add Elder Relatives
             </Link>
-            <Link to="/billing" className={`nav-link ${location.pathname === '/billing' ? 'active' : ''}`}>
-              <CreditCard size={16} style={{ display: 'inline', marginRight: '4px' }} /> Subscription
+            <Link to="/billing" className={`nav-link ${location.pathname === '/billing' ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>
+              <CreditCard size={16} /> Billing & Plans
             </Link>
           </>
         )}
 
         {user.role === 'volunteer' && (
-          <Link to="/volunteer" className={`nav-link ${location.pathname === '/volunteer' ? 'active' : ''}`}>
-            <Users size={16} style={{ display: 'inline', marginRight: '4px' }} /> Volunteer Desk
+          <Link to="/volunteer" className={`nav-link ${location.pathname === '/volunteer' ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>
+            <Users size={16} /> Volunteer Desk
           </Link>
         )}
 
         {user.role === 'admin' && (
-          <Link to="/admin" className={`nav-link ${location.pathname === '/admin' ? 'active' : ''}`}>
-            <UserCheck size={16} style={{ display: 'inline', marginRight: '4px' }} /> Admin Operations
+          <Link to="/admin" className={`nav-link ${location.pathname === '/admin' ? 'active' : ''}`} onClick={() => setIsMenuOpen(false)}>
+            <UserCheck size={16} /> Admin Operations
           </Link>
         )}
 
-        {/* Tier Badge */}
-        <span className={getTierClass(user.subscriptionTier)}>
-          {user.subscriptionTier?.replace('_', ' ') || 'Free'} Plan
-        </span>
-
-        <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-          {user.name} ({user.role})
-        </span>
-
-        <button className="btn btn-secondary" onClick={logout} style={{ padding: '0.35rem 0.75rem', fontSize: '0.85rem' }}>
-          <LogOut size={14} /> Exit
-        </button>
+        <div className="user-info">
+          <span className={getTierClass(user.subscriptionTier)} style={{ alignSelf: 'flex-start', marginLeft: '0' }}>
+            {user.subscriptionTier?.replace('_', ' ') || 'Free'} Plan
+          </span>
+          <span style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
+            User: <strong>{user.name}</strong> ({user.role})
+          </span>
+          <button className="btn btn-secondary" onClick={() => { setIsMenuOpen(false); logout(); }} style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', display: 'flex', gap: '0.5rem', alignItems: 'center', width: '100%', marginTop: '0.5rem' }}>
+            <LogOut size={14} /> Exit Platform
+          </button>
+        </div>
       </div>
-    </nav>
+    </>
   );
 };
 

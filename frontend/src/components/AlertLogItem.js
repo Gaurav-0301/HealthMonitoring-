@@ -13,7 +13,7 @@ const AlertLogItem = ({ alertLog, onResolve }) => {
 
   return (
     <div className={`glass-card ${alertLog.finalStatus === 'pending' ? 'alert-banner-emergency' : ''}`} style={{ marginBottom: '1.25rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
             <AlertCircle size={20} color={alertLog.finalStatus === 'pending' ? '#ef4444' : '#f59e0b'} />
@@ -49,7 +49,7 @@ const AlertLogItem = ({ alertLog, onResolve }) => {
           <div className="timeline-item" key={idx}>
             <div style={{ paddingTop: '2px' }}>{getStepIcon(step.step)}</div>
             <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', fontWeight: 600 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', fontWeight: 600, flexWrap: 'wrap', gap: '0.5rem' }}>
                 <span>{step.title}</span>
                 <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <Clock size={12} /> {new Date(step.timestamp).toLocaleTimeString()}

@@ -128,7 +128,7 @@ const EditElderModal = ({ elder, onClose, onUpdated }) => {
             <input type="text" className="form-input" required value={name} onChange={(e) => setName(e.target.value)} />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div className="responsive-two-col-grid">
             <div className="form-group">
               <label className="form-label">Age (Years)</label>
               <input type="number" className="form-input" required value={age} onChange={(e) => setAge(e.target.value)} />
@@ -164,7 +164,7 @@ const EditElderModal = ({ elder, onClose, onUpdated }) => {
             <label className="form-label" style={{ color: '#0284c7', display: 'flex', alignItems: 'center', gap: '6px' }}>
               👨‍👦 Son / Daughter (Primary Family Contact)
             </label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <div className="responsive-two-col-grid" style={{ gap: '0.75rem' }}>
               <input type="text" className="form-input" placeholder="Son Name (e.g. Rajesh Sharma)" value={sonName} onChange={(e) => setSonName(e.target.value)} />
               <input type="tel" className="form-input" placeholder="Phone (+91...)" value={sonPhone} onChange={(e) => setSonPhone(e.target.value)} />
             </div>
@@ -175,7 +175,7 @@ const EditElderModal = ({ elder, onClose, onUpdated }) => {
             <label className="form-label" style={{ color: '#d97706', display: 'flex', alignItems: 'center', gap: '6px' }}>
               🏡 Nearby Neighbor (Fast Physical Check-in)
             </label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <div className="responsive-two-col-grid" style={{ gap: '0.75rem' }}>
               <input type="text" className="form-input" placeholder="Neighbor Name (e.g. Verma Ji)" value={neighborName} onChange={(e) => setNeighborName(e.target.value)} />
               <input type="tel" className="form-input" placeholder="Phone (+91...)" value={neighborPhone} onChange={(e) => setNeighborPhone(e.target.value)} />
             </div>
@@ -194,7 +194,7 @@ const EditElderModal = ({ elder, onClose, onUpdated }) => {
             <label className="form-label" style={{ color: '#7e22ce', display: 'flex', alignItems: 'center', gap: '6px' }}>
               👨‍⚕️ Family Doctor / Physician
             </label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <div className="responsive-two-col-grid" style={{ gap: '0.75rem' }}>
               <input type="text" className="form-input" placeholder="Doctor Name (e.g. Dr. Anand Kumar)" value={doctorName} onChange={(e) => setDoctorName(e.target.value)} />
               <input type="tel" className="form-input" placeholder="Doctor Contact Phone" value={doctorPhone} onChange={(e) => setDoctorPhone(e.target.value)} />
             </div>

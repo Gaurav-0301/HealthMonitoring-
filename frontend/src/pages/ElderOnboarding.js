@@ -135,7 +135,7 @@ const ElderOnboarding = () => {
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className="responsive-two-col-grid">
                 <div className="form-group">
                   <label className="form-label">Age (Years)</label>
                   <input
@@ -214,7 +214,7 @@ const ElderOnboarding = () => {
                   <label className="form-label" style={{ color: '#60a5fa', fontSize: '0.88rem' }}>
                     👨‍👦 Son / Daughter (Primary Family Contact)
                   </label>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                  <div className="responsive-two-col-grid" style={{ gap: '0.5rem' }}>
                     <input type="text" className="form-input" placeholder="Son Name" value={sonName} onChange={(e) => setSonName(e.target.value)} />
                     <input type="tel" className="form-input" placeholder="Phone (+91...)" value={sonPhone} onChange={(e) => setSonPhone(e.target.value)} />
                   </div>
@@ -225,7 +225,7 @@ const ElderOnboarding = () => {
                   <label className="form-label" style={{ color: '#f59e0b', fontSize: '0.88rem' }}>
                     🏡 Nearby Neighbor (Fast Physical Check-in)
                   </label>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                  <div className="responsive-two-col-grid" style={{ gap: '0.5rem' }}>
                     <input type="text" className="form-input" placeholder="Neighbor Name" value={neighborName} onChange={(e) => setNeighborName(e.target.value)} />
                     <input type="tel" className="form-input" placeholder="Phone (+91...)" value={neighborPhone} onChange={(e) => setNeighborPhone(e.target.value)} />
                   </div>
@@ -244,7 +244,7 @@ const ElderOnboarding = () => {
                   <label className="form-label" style={{ color: '#c084fc', fontSize: '0.88rem' }}>
                     👨‍⚕️ Family Doctor / Physician
                   </label>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                  <div className="responsive-two-col-grid" style={{ gap: '0.5rem' }}>
                     <input type="text" className="form-input" placeholder="Doctor Name" value={doctorName} onChange={(e) => setDoctorName(e.target.value)} />
                     <input type="tel" className="form-input" placeholder="Doctor Contact" value={doctorPhone} onChange={(e) => setDoctorPhone(e.target.value)} />
                   </div>
