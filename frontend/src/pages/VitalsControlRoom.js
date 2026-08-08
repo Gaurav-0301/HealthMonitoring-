@@ -197,7 +197,8 @@ const VitalsControlRoom = () => {
         setActiveCallModal({
           elderName,
           phone: targetElder?.emergencyContacts[0]?.phone || '+91 98765 43210',
-          triggerValue: anomalyReport.value
+          triggerValue: anomalyReport?.value || 'Critical Risk Spike',
+          alertLogId: escalationLog?._id
         });
       } else {
         newDispatches.push({
@@ -221,17 +222,49 @@ const VitalsControlRoom = () => {
 
   const handleSeedDemoData = async () => {
     try {
-      const res = await api.post('/auth/seed-demo');
-      alert('Demo Data & Savitri Devi profile seeded successfully! Auto-logging in as Demo Family...');
-      await handleQuickLogin('demo@circleback.com', 'Demo Family');
+      await api.post('/auth/seed-demo');
+      alert('Demo Data & Savitri Devi profile seeded successfully!');
+      fetchElders();
     } catch (err) {
       alert('Seeding error: ' + (err.response?.data?.message || err.message));
     }
   };
 
+  const handleTriggerManualSOS = async () => {
+    if (!selectedElderId) {
+      alert('Please select an elder profile first!');
+      return;
+    }
+    const targetElder = elders.find(e => e._id === selectedElderId);
+    const elderName = targetElder ? targetElder.name : 'Elder';
+    try {
+      const response = await api.post('/alerts/manual-sos', { elderId: selectedElderId, notes: 'Emergency SOS button clicked in Vitals Control Room' });
+      setActiveCallModal({
+        elderName,
+        phone: targetElder?.emergencyContacts[0]?.phone || '+91 98765 43210',
+        triggerValue: 'Manual SOS Emergency Triggered',
+        alertLogId: response.data?.alertLog?._id
+      });
+      setDispatchLog(prev => [
+        {
+          id: Date.now() + 1,
+          type: 'call',
+          title: `☎️ OUTBOUND TWILIO IVR VOICE CALL TO ELDER (${elderName})`,
+          recipient: targetElder?.emergencyContacts[0]?.phone || '+91 98765 43210',
+          script: `CarePulse Emergency Check-in. Hello ${elderName}, manual SOS activated! Press 1 if safe, press 2 for help.`,
+          status: 'Ringing / Waiting for digit response',
+          timestamp: new Date().toLocaleTimeString()
+        },
+        ...prev
+      ]);
+    } catch (err) {
+      alert('Error triggering SOS: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
   return (
     <div style={{ maxWidth: '1250px', margin: '1rem auto' }}>
-      {/* Header */}
+      {/* HEADER BAR */}
       <div className="page-header">
         <div>
           <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
@@ -242,9 +275,14 @@ const VitalsControlRoom = () => {
           </p>
         </div>
 
-        <button className="btn btn-secondary" onClick={handleSeedDemoData} style={{ borderColor: 'var(--primary)', color: 'var(--primary)' }}>
-          🌱 Seed Demo Data (Savitri Devi)
-        </button>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <button className="btn btn-danger" onClick={handleTriggerManualSOS} style={{ fontWeight: 800 }}>
+            🚨 Trigger Emergency Call & SOS Alert
+          </button>
+          <button className="btn btn-secondary" onClick={handleSeedDemoData} style={{ borderColor: 'var(--primary)', color: 'var(--primary)' }}>
+            🌱 Seed Demo Data (Savitri Devi)
+          </button>
+        </div>
       </div>
 
       {/* Quick Account Switcher */}
@@ -715,9 +753,28 @@ const VitalsControlRoom = () => {
             <div style={{ display: 'flex', gap: '0.75rem' }}>
               <button
                 className="btn btn-secondary"
-                style={{ flex: 1, borderColor: '#10b981', color: '#10b981' }}
-                onClick={() => {
-                  alert('Elder pressed 1 ("I am okay"). Alert marked safe.');
+                style={{ flex: 1, borderColor: '#10b981', color: '#10b981', fontWeight: 800 }}
+                onClick={async () => {
+                  try {
+                    if (activeCallModal?.alertLogId) {
+                      await api.patch(`/alerts/${activeCallModal.alertLogId}/resolve`, { note: 'Elder pressed 1 on IVR call confirming safety.' });
+                    }
+                  } catch (err) {
+                    console.warn('Alert resolve info:', err.message);
+                  }
+                  setDispatchLog(prev => [
+                    {
+                      id: Date.now(),
+                      type: 'normal',
+                      title: `✅ TWILIO IVR CALL RESOLVED — ELDER CONFIRMED SAFE`,
+                      recipient: activeCallModal.phone,
+                      body: `Elder ${activeCallModal.elderName} pressed 1 ("I am safe"). Alert marked safe & parallel escalation canceled.`,
+                      status: 'Resolved & Cleared (Elder Safe)',
+                      timestamp: new Date().toLocaleTimeString()
+                    },
+                    ...prev
+                  ]);
+                  alert('Elder pressed 1 ("I am safe"). Alert marked safe!');
                   setActiveCallModal(null);
                 }}
               >
@@ -725,9 +782,37 @@ const VitalsControlRoom = () => {
               </button>
               <button
                 className="btn btn-danger"
-                style={{ flex: 1 }}
-                onClick={() => {
-                  alert('Elder pressed 2 or did not answer. Step 2 Parallel Family + Volunteer Escalation dispatches live!');
+                style={{ flex: 1, fontWeight: 800 }}
+                onClick={async () => {
+                  try {
+                    if (selectedElderId) {
+                      await api.post('/alerts/manual-sos', { elderId: selectedElderId, notes: 'IVR No Answer / Digit 2 Escalation Fired' });
+                    }
+                  } catch (err) {
+                    console.warn('Escalation info:', err.message);
+                  }
+                  setDispatchLog(prev => [
+                    {
+                      id: Date.now() + 1,
+                      type: 'sms',
+                      title: `📱 PARALLEL TWILIO EMERGENCY SMS TO FAMILY & CONTACTS`,
+                      recipient: user?.phone || '+91 98765 43210',
+                      body: `EMERGENCY SOS [CircleBack]: ${activeCallModal.elderName} failed IVR phone check-in! Dispatched to emergency contacts.`,
+                      status: 'Delivered (Twilio SMS Gateway)',
+                      timestamp: new Date().toLocaleTimeString()
+                    },
+                    {
+                      id: Date.now() + 2,
+                      type: 'volunteer',
+                      title: `🚑 GEOSPATIAL $near 5km NEIGHBORHOOD VOLUNTEER DISPATCH`,
+                      recipient: 'Nearby Verified Responders',
+                      body: `NEIGHBORHOOD SOS: Urgent check-in required for ${activeCallModal.elderName}!`,
+                      status: 'Dispatched (MongoDB $near 5km)',
+                      timestamp: new Date().toLocaleTimeString()
+                    },
+                    ...prev
+                  ]);
+                  alert('No Answer / Digit 2 pressed! Step 2 Parallel Family SMS & Volunteer Escalation Fired!');
                   setActiveCallModal(null);
                 }}
               >
