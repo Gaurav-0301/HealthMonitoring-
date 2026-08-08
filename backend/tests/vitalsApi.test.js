@@ -18,11 +18,14 @@ beforeAll(async () => {
   // Import app after env vars set
   app = require('../server');
 
-  // Seed demo accounts
-  const seedRes = await request(app).post('/api/auth/seed-demo');
+  // Seed demo accounts or use auto-seeded elder
+  await request(app).post('/api/auth/seed-demo');
+
   const ElderProfile = require('../models/ElderProfile');
   const elder = await ElderProfile.findOne({ name: 'Savitri Devi' });
-  elderId = seedRes.body?.elder?._id || elder?._id;
+  if (elder) {
+    elderId = elder._id.toString();
+  }
 
   // Login as demo family member
   const loginRes = await request(app)

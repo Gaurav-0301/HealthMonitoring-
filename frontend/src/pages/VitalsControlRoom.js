@@ -24,6 +24,78 @@ const VitalsControlRoom = () => {
   const [loading, setLoading] = useState(false);
   const [dispatchLog, setDispatchLog] = useState([]);
   const [activeCallModal, setActiveCallModal] = useState(null);
+  const [countdown, setCountdown] = useState(10);
+
+  useEffect(() => {
+    let timer;
+    if (activeCallModal) {
+      setCountdown(10);
+      timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            handleAutoEscalateAll();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [activeCallModal]);
+
+  const handleAutoEscalateAll = async () => {
+    if (!activeCallModal) return;
+    try {
+      if (selectedElderId) {
+        await api.post('/alerts/manual-sos', { elderId: selectedElderId, notes: 'IVR 10-Second Demo Check-in Expired - Outbound Emergency Calls & SMS Dispatched to All Persons' });
+      }
+    } catch (err) {
+      console.warn('Auto escalation info:', err.message);
+    }
+    setDispatchLog(prev => [
+      {
+        id: Date.now() + 1,
+        type: 'call',
+        title: `☎️ OUTBOUND TWILIO VOICE CALL & SMS TO SON / FAMILY`,
+        recipient: '+91 98765 43210',
+        script: `Emergency SOS Alert! Hello Son, elder ${activeCallModal.elderName} failed 10s check-in. Anomaly: ${activeCallModal.triggerValue}`,
+        body: `CRITICAL ALERT [CircleBack]: ${activeCallModal.elderName} failed health check! Son notified via Voice Call & Twilio SMS.`,
+        status: 'Ringing & Delivered (Son)',
+        timestamp: new Date().toLocaleTimeString()
+      },
+      {
+        id: Date.now() + 2,
+        type: 'volunteer',
+        title: `🚑 OUTBOUND TWILIO VOICE CALL & SMS TO NEIGHBOUR / VOLUNTEERS`,
+        recipient: 'Nearby Verified Neighbours & Responders (Within 5km)',
+        body: `NEIGHBORHOOD SOS: Immediate check-in required for ${activeCallModal.elderName}!`,
+        status: 'Dispatched (MongoDB $near 5km)',
+        timestamp: new Date().toLocaleTimeString()
+      },
+      {
+        id: Date.now() + 3,
+        type: 'call',
+        title: `🩺 OUTBOUND TWILIO EMERGENCY CALL & SMS TO PRIMARY DOCTOR`,
+        recipient: 'Dr. Anand Kumar (Cardiologist)',
+        script: `Medical Emergency Alert: Patient ${activeCallModal.elderName} triggered health anomaly. Medical history summary sent.`,
+        body: `MEDICAL ALERT: Patient ${activeCallModal.elderName} (Age 74) triggered emergency anomaly: ${activeCallModal.triggerValue}`,
+        status: 'Dispatched to Primary Physician',
+        timestamp: new Date().toLocaleTimeString()
+      },
+      {
+        id: Date.now() + 4,
+        type: 'sms',
+        title: `🏥 OFFICIAL PARAMEDIC & AMBULANCE DISPATCH HOTLINE`,
+        recipient: 'Emergency Medical Services (+91 8600475388)',
+        body: `AMBULANCE DISPATCH: Elder ${activeCallModal.elderName}. GPS: https://maps.google.com/?q=28.6139,77.2090. Blood Group: B+.`,
+        status: 'Dispatched to Paramedic Hotline',
+        timestamp: new Date().toLocaleTimeString()
+      },
+      ...prev
+    ]);
+    setActiveCallModal(null);
+  };
 
   const fetchElders = async () => {
     try {
@@ -756,27 +828,36 @@ const VitalsControlRoom = () => {
           justifyContent: 'center',
           zIndex: 1000
         }}>
-          <div className="glass-card" style={{ maxWidth: '420px', width: '90%', textAlign: 'center', border: '2px solid #ef4444', boxShadow: '0 0 40px rgba(239,68,68,0.5)' }}>
-            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#ef4444', color: 'white', display: 'flex', alignItems: 'center', justifyCenter: 'center', margin: '0 auto 1rem' }} className="spin">
+          <div className="glass-card" style={{ maxWidth: '480px', width: '92%', textAlign: 'center', border: '2px solid #ef4444', boxShadow: '0 0 50px rgba(239,68,68,0.6)' }}>
+            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#ef4444', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.75rem' }} className="spin">
               <PhoneCall size={32} style={{ margin: 'auto' }} />
             </div>
 
-            <h3 style={{ fontSize: '1.4rem', color: '#ef4444' }}>STEP 1: TWILIO VOICE IVR CALL OUTBOUND</h3>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: '0.5rem 0 1.25rem' }}>
+            <div style={{ background: '#ef4444', color: 'white', padding: '0.4rem 1rem', borderRadius: '20px', display: 'inline-block', fontWeight: 800, fontSize: '0.85rem', marginBottom: '0.75rem' }}>
+              ⏳ DEMO AUTO-ESCALATION COUNTDOWN: 00:{countdown < 10 ? '0' + countdown : countdown}s
+            </div>
+
+            <h3 style={{ fontSize: '1.3rem', color: '#ef4444', fontWeight: 800 }}>STEP 1: TWILIO VOICE IVR CALL OUTBOUND</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', margin: '0.35rem 0 1rem' }}>
               Calling Elder: <strong>{activeCallModal.elderName}</strong> ({activeCallModal.phone})
             </p>
 
-            <div style={{ background: 'rgba(0,0,0,0.4)', padding: '1rem', borderRadius: '10px', fontSize: '0.9rem', color: '#fca5a5', marginBottom: '1.5rem', textAlign: 'left' }}>
-              <p style={{ fontWeight: 600, marginBottom: '4px' }}>🔊 IVR Voice Script Playing:</p>
-              <p style={{ fontStyle: 'italic' }}>
-                "CircleBack Emergency Check-in. Hello {activeCallModal.elderName}, we detected an anomaly ({activeCallModal.triggerValue}). Press 1 if safe, press 2 for immediate emergency assistance."
+            <div style={{ background: 'rgba(0,0,0,0.4)', padding: '0.85rem', borderRadius: '10px', fontSize: '0.85rem', color: '#fca5a5', marginBottom: '1rem', textAlign: 'left' }}>
+              <p style={{ fontWeight: 700, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <PhoneCall size={14} /> Outbound Calls & SMS Dispatched in 10s Window to All Persons:
               </p>
+              <ul style={{ margin: 0, paddingLeft: '1.2rem', lineHeight: 1.5, fontStyle: 'italic', fontSize: '0.82rem' }}>
+                <li>👨‍👦 <strong>Son / Family Member</strong>: Voice Call & SMS (+91 98765 43210)</li>
+                <li>🏘️ <strong>Neighbour / Volunteer</strong>: Geospatial Call & SMS (+91 86004 75388)</li>
+                <li>🩺 <strong>Primary Doctor</strong>: Physician Medical Alert (+91 98100 55443)</li>
+                <li>🚑 <strong>Ambulance / Paramedic Hotline</strong>: Paramedic Dispatch (+91 86004 75388)</li>
+              </ul>
             </div>
 
             <div style={{ display: 'flex', gap: '0.75rem' }}>
               <button
                 className="btn btn-secondary"
-                style={{ flex: 1, borderColor: '#10b981', color: '#10b981', fontWeight: 800 }}
+                style={{ flex: 1, borderColor: '#10b981', color: '#10b981', fontWeight: 800, fontSize: '0.85rem' }}
                 onClick={async () => {
                   try {
                     if (activeCallModal?.alertLogId) {
@@ -805,41 +886,10 @@ const VitalsControlRoom = () => {
               </button>
               <button
                 className="btn btn-danger"
-                style={{ flex: 1, fontWeight: 800 }}
-                onClick={async () => {
-                  try {
-                    if (selectedElderId) {
-                      await api.post('/alerts/manual-sos', { elderId: selectedElderId, notes: 'IVR No Answer / Digit 2 Escalation Fired' });
-                    }
-                  } catch (err) {
-                    console.warn('Escalation info:', err.message);
-                  }
-                  setDispatchLog(prev => [
-                    {
-                      id: Date.now() + 1,
-                      type: 'sms',
-                      title: `📱 PARALLEL TWILIO EMERGENCY SMS TO FAMILY & CONTACTS`,
-                      recipient: user?.phone || '+91 98765 43210',
-                      body: `EMERGENCY SOS [CircleBack]: ${activeCallModal.elderName} failed IVR phone check-in! Dispatched to emergency contacts.`,
-                      status: 'Delivered (Twilio SMS Gateway)',
-                      timestamp: new Date().toLocaleTimeString()
-                    },
-                    {
-                      id: Date.now() + 2,
-                      type: 'volunteer',
-                      title: `🚑 GEOSPATIAL $near 5km NEIGHBORHOOD VOLUNTEER DISPATCH`,
-                      recipient: 'Nearby Verified Responders',
-                      body: `NEIGHBORHOOD SOS: Urgent check-in required for ${activeCallModal.elderName}!`,
-                      status: 'Dispatched (MongoDB $near 5km)',
-                      timestamp: new Date().toLocaleTimeString()
-                    },
-                    ...prev
-                  ]);
-                  alert('No Answer / Digit 2 pressed! Step 2 Parallel Family SMS & Volunteer Escalation Fired!');
-                  setActiveCallModal(null);
-                }}
+                style={{ flex: 1, fontWeight: 800, fontSize: '0.85rem' }}
+                onClick={handleAutoEscalateAll}
               >
-                No Answer / Press 2 (Escalate)
+                Press 2 / Escalate All Now
               </button>
             </div>
           </div>
