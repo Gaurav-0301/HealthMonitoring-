@@ -21,4 +21,9 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/circleback'
   .then(() => console.log('mongo connected'))
   .catch(err => console.log('mongo error', err));
 
-app.listen(PORT, () => console.log('server started on port', PORT));
+const { startVitalsSyncJob } = require('./jobs/vitalsSyncJob');
+
+app.listen(PORT, () => {
+  console.log('server started on port', PORT);
+  startVitalsSyncJob();
+});
