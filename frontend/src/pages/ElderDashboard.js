@@ -57,8 +57,19 @@ const ElderDashboard = () => {
     setLoading(true);
     try {
       // Try fetching elders associated with user
-      const eldersRes = await api.get('/elder-profile');
-      const elders = eldersRes.data || [];
+      let eldersRes = await api.get('/elder-profile');
+      let elders = eldersRes.data || [];
+
+      if (elders.length === 0) {
+        try {
+          await api.post('/auth/seed-demo');
+          eldersRes = await api.get('/elder-profile');
+          elders = eldersRes.data || [];
+        } catch (seedErr) {
+          console.warn('Auto-seed in ElderDashboard warning:', seedErr.message);
+        }
+      }
+
       const currentElder = elders.length > 0 ? elders[0] : null;
 
       if (currentElder) {
@@ -90,14 +101,14 @@ const ElderDashboard = () => {
       } else {
         // Fallback default demo elder details for clean view
         setElderProfile({
-          name: user?.name || 'Grandma Mary Johnson',
-          age: 76,
-          primaryContactName: 'David Johnson (Son)',
-          primaryContactPhone: '+1 (555) 234-5678',
-          doctorName: 'Dr. Sarah Jenkins',
-          doctorPhone: '+1 (555) 987-6543',
-          volunteerName: 'Alex Rivera (Assigned Care Assistant)',
-          volunteerPhone: '+1 (555) 345-6789'
+          name: user?.name || 'Savitri Devi',
+          age: 74,
+          primaryContactName: 'Rajesh Sharma (Son)',
+          primaryContactPhone: '+91 98765 43210',
+          doctorName: 'Dr. Anand Kumar (Cardiologist)',
+          doctorPhone: '+91 98100 55443',
+          volunteerName: 'Amit Patel (Assigned Care Assistant)',
+          volunteerPhone: '+91 98111 22334'
         });
 
         setAlerts([
@@ -107,14 +118,6 @@ const ElderDashboard = () => {
             severity: 'LOW',
             message: 'Morning Medication & Vitals Check-in Complete',
             createdAt: new Date().toISOString(),
-            resolved: true
-          },
-          {
-            _id: 'a2',
-            type: 'VITAL_ANOMALY',
-            severity: 'MEDIUM',
-            message: 'Slightly Elevated Heart Rate (92 bpm) - Resolved after rest',
-            createdAt: new Date(Date.now() - 3600000).toISOString(),
             resolved: true
           }
         ]);
@@ -127,7 +130,7 @@ const ElderDashboard = () => {
   };
 
   // Start Call Handler
-  const startCall = (contact) => {
+  const startCall = async (contact) => {
     setCallSeconds(0);
     setActiveCall({ ...contact, status: 'connecting' });
     
@@ -135,6 +138,20 @@ const ElderDashboard = () => {
     setTimeout(() => {
       setActiveCall((prev) => (prev ? { ...prev, status: 'connected' } : null));
     }, 2000);
+
+    // Trigger real backend Twilio SMS & Voice IVR escalation pipeline
+    if (elderProfile?._id) {
+      try {
+        await api.post('/alerts/manual-sos', {
+          elderId: elderProfile._id,
+          notes: `Quick Call initiated by elder to ${contact.name} (${contact.role})`
+        });
+        const aRes = await api.get(`/alerts/elder/${elderProfile._id}`);
+        setAlerts(aRes.data || []);
+      } catch (err) {
+        console.error('Error triggering backend alert:', err);
+      }
+    }
   };
 
   const endCall = () => {
@@ -146,7 +163,7 @@ const ElderDashboard = () => {
   };
 
   // Emergency SOS Button Click
-  const handleSOS = () => {
+  const handleSOS = async () => {
     setSosActive(true);
     startCall({
       name: 'EMERGENCY DISPATCH & FAMILY SOS',
@@ -155,14 +172,17 @@ const ElderDashboard = () => {
       isSos: true
     });
 
-    // Also push a real alert if elder ID exists
     if (elderProfile?._id) {
-      api.post('/alerts', {
-        elderId: elderProfile._id,
-        type: 'MANUAL_SOS',
-        severity: 'CRITICAL',
-        message: '🚨 ELDER PRESSED SOS PANIC BUTTON ON DASHBOARD'
-      }).catch(console.error);
+      try {
+        await api.post('/alerts/manual-sos', {
+          elderId: elderProfile._id,
+          notes: '🚨 ELDER PRESSED SOS PANIC BUTTON ON DASHBOARD'
+        });
+        const aRes = await api.get(`/alerts/elder/${elderProfile._id}`);
+        setAlerts(aRes.data || []);
+      } catch (err) {
+        console.error('Error triggering backend SOS:', err);
+      }
     }
 
     // Add local alert
