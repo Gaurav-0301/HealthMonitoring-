@@ -139,14 +139,16 @@ const executeStep3EmergencyServices = async (alertLog, elder) => {
   console.log(`[ESCALATION STEP 3] Dispatching alert to Emergency Services for ${elder.name}...`);
 
   const medicalHistory = await MedicalHistory.findOne({ elderProfileId: elder._id });
-  const mapLink = `https://www.google.com/maps?q=${elder.geoLocation.lat},${elder.geoLocation.lng}`;
+  const elderLat = elder.geoLocation?.lat || elder.geoLocation?.coordinates?.[1] || 28.6139;
+  const elderLng = elder.geoLocation?.lng || elder.geoLocation?.coordinates?.[0] || 77.2090;
+  const mapLink = `https://www.google.com/maps?q=${elderLat},${elderLng}`;
   
   const emergencyPayload = {
     elderName: elder.name,
     age: elder.age,
     gender: elder.gender,
     address: elder.address,
-    gpsLocation: elder.geoLocation,
+    gpsLocation: { lat: elderLat, lng: elderLng },
     mapLink,
     bloodGroup: medicalHistory?.bloodGroup || 'Unknown',
     criticalConditions: medicalHistory?.conditions || [],

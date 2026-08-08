@@ -18,7 +18,7 @@ const alertLogSchema = new mongoose.Schema({
   },
   triggerType: {
     type: String,
-    enum: ['heart_rate_anomaly', 'inactivity', 'manual_sos'],
+    enum: ['heart_rate_anomaly', 'inactivity', 'manual_sos', 'disease_risk_spike'],
     required: true
   },
   triggerValue: {

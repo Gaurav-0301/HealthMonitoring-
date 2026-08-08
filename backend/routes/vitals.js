@@ -152,19 +152,31 @@ router.post('/:elderId/mock-simulate', authMiddleware, async (req, res) => {
 
     const inserted = await VitalsHistory.insertMany(processedReadings);
 
-    // 3. Immediately run anomaly detection
+    // 3. Immediately run anomaly detection & ML high risk probability spike check
     const anomalyReport = await detectVitalsAnomaly(elderId);
+    const latestInserted = inserted[inserted.length - 1];
+    const isRiskSpike = (latestInserted?.cardiacRisk >= 0.70) ||
+                        (latestInserted?.respiratoryRisk >= 0.70) ||
+                        (latestInserted?.feverRisk >= 0.70) ||
+                        (latestInserted?.stressRisk >= 0.70) ||
+                        (latestInserted?.metabolicRisk >= 0.70);
 
     let escalationResult = null;
-    if (anomalyReport.status === 'anomaly') {
-      escalationResult = await triggerEscalation(elderId, anomalyReport.type, anomalyReport.value);
+    if (anomalyReport.status === 'anomaly' || isRiskSpike) {
+      const triggerType = anomalyReport.status === 'anomaly' ? anomalyReport.type : 'disease_risk_spike';
+      const triggerVal = anomalyReport.status === 'anomaly' ? anomalyReport.value : `ML Disease Risk Spike >= 70%`;
+      try {
+        escalationResult = await triggerEscalation(elderId, triggerType, triggerVal);
+      } catch (escErr) {
+        console.warn('[Escalation Trigger Warning]', escErr.message);
+      }
     }
 
     res.json({
       message: `Simulated ${inserted.length} reading(s) successfully!`,
       insertedReadings: inserted,
       anomalyReport,
-      escalationTriggered: anomalyReport.status === 'anomaly',
+      escalationTriggered: anomalyReport.status === 'anomaly' || isRiskSpike,
       escalationLog: escalationResult
     });
   } catch (error) {

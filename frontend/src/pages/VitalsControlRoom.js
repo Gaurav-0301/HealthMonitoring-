@@ -265,6 +265,33 @@ const VitalsControlRoom = () => {
         </div>
       </div>
 
+      {/* ACTIVE SMS & EMERGENCY ESCALATION STATUS BANNER */}
+      <div className="glass-card" style={{
+        marginBottom: '1.5rem',
+        background: liveRiskData.some(d => d.risk >= 70) ? 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)' : 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+        border: `1.5px solid ${liveRiskData.some(d => d.risk >= 70) ? '#ef4444' : '#10b981'}`,
+        display: 'flex',
+        justify: 'space-between',
+        alignItems: 'center',
+        padding: '1rem 1.25rem'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          {liveRiskData.some(d => d.risk >= 70) ? (
+            <AlertTriangle size={24} color="#ef4444" className="spin" />
+          ) : (
+            <CheckCircle size={24} color="#10b981" />
+          )}
+          <div>
+            <h4 style={{ margin: 0, fontWeight: 800, color: liveRiskData.some(d => d.risk >= 70) ? '#991b1b' : '#065f46', fontSize: '1rem' }}>
+              {liveRiskData.some(d => d.risk >= 70) ? '🚨 CRITICAL RISK SPIKE DETECTED — TWILIO EMERGENCY SMS & IVR DISPATCH ACTIVE' : '🟢 ACTIVE SAFETY MONITORING STATUS: SMS & ESCALATION PIPELINE READY'}
+            </h4>
+            <p style={{ margin: '2px 0 0', fontSize: '0.83rem', color: liveRiskData.some(d => d.risk >= 70) ? '#b91c1c' : '#047857' }}>
+              {liveRiskData.some(d => d.risk >= 70) ? 'Automatic 3-step parallel escalation (Twilio Voice IVR + Family SMS + $near 5km Volunteer Dispatch) active!' : 'Continuous 15-minute smartwatch telemetry sync and real-time disease risk screening active.'}
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* SECTION 1: RADIO BUTTON ELDER SELECTION */}
       <div className="glass-card" style={{ marginBottom: '1.5rem' }}>
         <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
