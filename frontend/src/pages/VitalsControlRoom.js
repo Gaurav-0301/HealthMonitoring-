@@ -250,36 +250,33 @@ const VitalsControlRoom = () => {
             <Send size={16} /> Send Custom Reading Stream ({heartRate} BPM, {steps} steps)
           </button>
 
-          {/* Preset Instant Trigger Buttons */}
+          {/* Preset Instant Trigger Dropdown */}
           <h4 style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
-            Instant Emergency Escalation Scenarios:
+            Instant Smartwatch Simulation Scenarios:
           </h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            <button
-              className="btn btn-danger"
+            <select 
+              className="form-select" 
+              style={{ width: '100%', padding: '0.65rem 1rem', fontSize: '0.9rem', borderRadius: '8px' }}
+              onChange={(e) => {
+                if (e.target.value) {
+                  handleSimulateVitals(e.target.value);
+                  e.target.value = ''; // Reset select
+                }
+              }}
               disabled={loading}
-              onClick={() => handleSimulateVitals('spike_3_readings')}
-              style={{ justifyContent: 'flex-start', padding: '0.85rem 1rem' }}
             >
-              <AlertTriangle size={20} />
-              <div style={{ textAlign: 'left' }}>
-                <div>Trigger 3-Spike Heart Rate Anomaly (145+ BPM)</div>
-                <div style={{ fontSize: '0.78rem', opacity: 0.85 }}>Fires Twilio IVR Call + Parallel Family SMS + Nearby Volunteer Search</div>
-              </div>
-            </button>
-
-            <button
-              className="btn btn-secondary"
-              disabled={loading}
-              onClick={() => handleSimulateVitals('inactivity_4h')}
-              style={{ justifyContent: 'flex-start', padding: '0.85rem 1rem', borderColor: '#f59e0b', color: '#f59e0b' }}
-            >
-              <Activity size={20} />
-              <div style={{ textAlign: 'left' }}>
-                <div>Trigger 4-Hour Inactivity Anomaly (0 steps)</div>
-                <div style={{ fontSize: '0.78rem', opacity: 0.85 }}>Fires Daytime Inactivity Escalation Alert</div>
-              </div>
-            </button>
+              <option value="">-- Choose Preset Scenario --</option>
+              <option value="healthy">🟢 Case 1: Healthy Baseline (All Low Risks)</option>
+              <option value="cardiac">❤️ Case 2: Cardiac Risk Pattern</option>
+              <option value="respiratory">🫁 Case 3: Respiratory Risk Pattern (SpO2 Drop)</option>
+              <option value="fever">🌡️ Case 4: Fever / Infection Pattern</option>
+              <option value="stress">🧠 Case 5: Stress / Fatigue Pattern</option>
+              <option value="metabolic">🍏 Case 6: Metabolic / Lifestyle Risk</option>
+              <option value="worst_case">🚨 Case 7: Worst-Case Multi-Risk</option>
+              <option value="spike_3_readings">⚡ Anomaly: 3 Heart Rate Spikes (Escalation)</option>
+              <option value="inactivity_4h">📴 Anomaly: 4-Hour daytime inactivity (Escalation)</option>
+            </select>
           </div>
         </div>
 

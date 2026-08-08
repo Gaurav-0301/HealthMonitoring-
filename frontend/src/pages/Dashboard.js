@@ -297,41 +297,139 @@ const Dashboard = () => {
                     No vitals history recorded yet. Use the Vitals Simulation Toolbar above to generate demo readings!
                   </div>
                 ) : (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
-                    {/* Heart Rate BPM Chart */}
-                    <div>
-                      <h4 style={{ fontSize: '1rem', marginBottom: '1rem', color: '#f43f5e', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Heart size={18} /> Heart Rate BPM Trend (Last Readings)
-                      </h4>
-                      <div style={{ width: '100%', height: 260 }}>
-                        <ResponsiveContainer>
-                          <LineChart data={vitalsHistory}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
-                            <XAxis dataKey="timeLabel" stroke="#64748b" style={{ fontSize: '0.75rem' }} />
-                            <YAxis domain={[40, 160]} stroke="#64748b" style={{ fontSize: '0.75rem' }} />
-                            <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', color: '#fff' }} />
-                            <ReferenceArea y1={selectedElder.baselineHeartRateMin || 60} y2={selectedElder.baselineHeartRateMax || 100} fill="rgba(16, 185, 129, 0.08)" stroke="none" />
-                            <Line type="monotone" dataKey="heartRate" stroke="#f43f5e" strokeWidth={3} dot={{ r: 4, fill: '#f43f5e' }} activeDot={{ r: 7 }} />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
+                  <div>
+                    {/* ML Health Risk Screening & Smartwatch Vitals Panels */}
+                    {vitalsHistory.length > 0 && (() => {
+                      const latestReading = vitalsHistory[vitalsHistory.length - 1];
+                      return (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+                          {/* Risk Screening Card */}
+                          <div className="glass-card" style={{ borderLeft: '5px solid var(--primary)', background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)' }}>
+                            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-primary)' }}>
+                              🛡️ ML Health Risk Screening Report
+                            </h3>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                              {[
+                                { name: 'Cardiac Risk', val: latestReading.cardiacRisk, color: '#f43f5e' },
+                                { name: 'Respiratory Risk', val: latestReading.respiratoryRisk, color: '#8b5cf6' },
+                                { name: 'Fever / Infection Risk', val: latestReading.feverRisk, color: '#e11d48' },
+                                { name: 'Stress / Fatigue Risk', val: latestReading.stressRisk, color: '#fbbf24' },
+                                { name: 'Metabolic / Lifestyle Risk', val: latestReading.metabolicRisk, color: '#10b981' }
+                              ].map((risk, index) => {
+                                const percentage = Math.round((risk.val || 0) * 100);
+                                let badgeText = 'Low Risk';
+                                let badgeColor = '#10b981';
+                                if ((risk.val || 0) >= 0.70) {
+                                  badgeText = 'High Risk';
+                                  badgeColor = '#ef4444';
+                                } else if ((risk.val || 0) >= 0.40) {
+                                  badgeText = 'Elevated Risk';
+                                  badgeColor = '#f59e0b';
+                                }
 
-                    {/* Step Movement Activity Chart */}
-                    <div>
-                      <h4 style={{ fontSize: '1rem', marginBottom: '1rem', color: '#06b6d4', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Activity size={18} /> Step Count Activity Movement
-                      </h4>
-                      <div style={{ width: '100%', height: 260 }}>
-                        <ResponsiveContainer>
-                          <BarChart data={vitalsHistory}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
-                            <XAxis dataKey="timeLabel" stroke="#64748b" style={{ fontSize: '0.75rem' }} />
-                            <YAxis stroke="#64748b" style={{ fontSize: '0.75rem' }} />
-                            <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', color: '#fff' }} />
-                            <Bar dataKey="steps" fill="#06b6d4" radius={[4, 4, 0, 0]} />
-                          </BarChart>
-                        </ResponsiveContainer>
+                                return (
+                                  <div key={index}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '4px' }}>
+                                      <span style={{ fontWeight: 700, color: 'var(--text-secondary)' }}>{risk.name}</span>
+                                      <span style={{ color: badgeColor, fontWeight: 800 }}>{percentage}% ({badgeText})</span>
+                                    </div>
+                                    <div style={{ width: '100%', height: '8px', background: '#cbd5e1', borderRadius: '4px', overflow: 'hidden' }}>
+                                      <div style={{ width: `${percentage}%`, height: '100%', background: risk.color, borderRadius: '4px', transition: 'width 0.5s ease' }} />
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '1.25rem', fontStyle: 'italic' }}>
+                              Predictions calculated in real-time from active band telemetry via disease-predictor screening API.
+                            </p>
+                          </div>
+
+                          {/* Latest Vitals Sensor Grid */}
+                          <div className="glass-card">
+                            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              ⌚ Smartwatch Sensor Data (Vitals)
+                            </h3>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                              <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Heart Rate / Resting</div>
+                                <div style={{ fontSize: '1.1rem', fontWeight: 800 }}>
+                                  {latestReading.heartRate} / {latestReading.restingHeartRate || '--'} <span style={{ fontSize: '0.75rem', fontWeight: 500 }}>BPM</span>
+                                </div>
+                              </div>
+                              <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>HR Variability (SD)</div>
+                                <div style={{ fontSize: '1.1rem', fontWeight: 800 }}>
+                                  {latestReading.heartRateSd || '--'} <span style={{ fontSize: '0.75rem', fontWeight: 500 }}>ms</span>
+                                </div>
+                              </div>
+                              <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>SpO2 Avg / Min</div>
+                                <div style={{ fontSize: '1.1rem', fontWeight: 800 }}>
+                                  {latestReading.spo2Avg || '--'}% / {latestReading.spo2Min || '--'}%
+                                </div>
+                              </div>
+                              <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Skin Temperature</div>
+                                <div style={{ fontSize: '1.1rem', fontWeight: 800 }}>
+                                  {latestReading.skinTemp || '--'} <span style={{ fontSize: '0.75rem', fontWeight: 500 }}>°C</span>
+                                </div>
+                              </div>
+                              <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Steps Today</div>
+                                <div style={{ fontSize: '1.1rem', fontWeight: 800 }}>
+                                  {latestReading.stepsToday || latestReading.steps || 0}
+                                </div>
+                              </div>
+                              <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Sleep Duration & Eff</div>
+                                <div style={{ fontSize: '1.1rem', fontWeight: 800 }}>
+                                  {latestReading.sleepHours || '--'}h / {latestReading.sleepEfficiency || '--'}%
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Historical Trends Charts */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
+                      {/* Heart Rate BPM Chart */}
+                      <div>
+                        <h4 style={{ fontSize: '1rem', marginBottom: '1rem', color: '#f43f5e', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Heart size={18} /> Heart Rate BPM Trend (Last Readings)
+                        </h4>
+                        <div style={{ width: '100%', height: 260 }}>
+                          <ResponsiveContainer>
+                            <LineChart data={vitalsHistory}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+                              <XAxis dataKey="timeLabel" stroke="#64748b" style={{ fontSize: '0.75rem' }} />
+                              <YAxis domain={[40, 160]} stroke="#64748b" style={{ fontSize: '0.75rem' }} />
+                              <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', color: '#fff' }} />
+                              <ReferenceArea y1={selectedElder.baselineHeartRateMin || 60} y2={selectedElder.baselineHeartRateMax || 100} fill="rgba(16, 185, 129, 0.08)" stroke="none" />
+                              <Line type="monotone" dataKey="heartRate" stroke="#f43f5e" strokeWidth={3} dot={{ r: 4, fill: '#f43f5e' }} activeDot={{ r: 7 }} />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+
+                      {/* Step Movement Activity Chart */}
+                      <div>
+                        <h4 style={{ fontSize: '1rem', marginBottom: '1rem', color: '#06b6d4', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Activity size={18} /> Step Count Activity Movement
+                        </h4>
+                        <div style={{ width: '100%', height: 260 }}>
+                          <ResponsiveContainer>
+                            <BarChart data={vitalsHistory}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+                              <XAxis dataKey="timeLabel" stroke="#64748b" style={{ fontSize: '0.75rem' }} />
+                              <YAxis stroke="#64748b" style={{ fontSize: '0.75rem' }} />
+                              <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', color: '#fff' }} />
+                              <Bar dataKey="steps" fill="#06b6d4" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
                       </div>
                     </div>
                   </div>

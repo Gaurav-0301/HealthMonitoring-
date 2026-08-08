@@ -51,38 +51,34 @@ const VitalsSimulator = ({ selectedElderId, onSimulationComplete }) => {
         Simulate fitness band vitals readings to test CircleBack's calibration, anomaly detection (3-consecutive-reading rule), and parallel escalation pipeline live.
       </p>
 
-      <div className="simulator-buttons">
-        <button
-          className="btn btn-secondary"
+      <div className="simulator-buttons" style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+        <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>Select Smartwatch Simulation Scenario:</span>
+        <select 
+          className="form-select" 
+          style={{ width: 'auto', minWidth: '220px', padding: '0.45rem 1rem', fontSize: '0.88rem', borderRadius: '8px' }}
+          onChange={(e) => {
+            if (e.target.value) {
+              handleSimulate(e.target.value);
+              e.target.value = ''; // Reset select
+            }
+          }}
           disabled={loading}
-          onClick={() => handleSimulate('normal')}
         >
-          <Activity size={16} color="#10b981" />
-          Normal Reading (72 bpm, 50 steps)
-        </button>
-
-        <button
-          className="btn btn-danger"
-          disabled={loading}
-          onClick={() => handleSimulate('spike_3_readings')}
-        >
-          <AlertTriangle size={16} />
-          Simulate 3 HR Spikes (145 bpm) [Anomaly!]
-        </button>
-
-        <button
-          className="btn btn-secondary"
-          disabled={loading}
-          onClick={() => handleSimulate('inactivity_4h')}
-          style={{ borderColor: 'rgba(245, 158, 11, 0.4)', color: '#f59e0b' }}
-        >
-          <Clock size={16} />
-          Simulate 4h Inactivity (0 steps)
-        </button>
-
+          <option value="">-- Choose Preset Scenario --</option>
+          <option value="healthy">🟢 Case 1: Healthy Baseline (All Low Risks)</option>
+          <option value="cardiac">❤️ Case 2: Cardiac Risk Pattern</option>
+          <option value="respiratory">🫁 Case 3: Respiratory Risk Pattern (SpO2 Drop)</option>
+          <option value="fever">🌡️ Case 4: Fever / Infection Pattern</option>
+          <option value="stress">🧠 Case 5: Stress / Fatigue Pattern</option>
+          <option value="metabolic">🍏 Case 6: Metabolic / Lifestyle Risk</option>
+          <option value="worst_case">🚨 Case 7: Worst-Case Multi-Risk</option>
+          <option value="spike_3_readings">⚡ Anomaly: 3 Heart Rate Spikes (Escalation)</option>
+          <option value="inactivity_4h">📴 Anomaly: 4-Hour daytime inactivity (Escalation)</option>
+        </select>
+        
         {loading && (
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-            <RefreshCw size={16} className="spin" /> Executing Pipeline...
+            <RefreshCw size={16} className="spin" /> Syncing Band & Ingesting ML Risks...
           </span>
         )}
       </div>

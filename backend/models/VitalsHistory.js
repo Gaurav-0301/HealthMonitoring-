@@ -15,6 +15,58 @@ const vitalsHistorySchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  restingHeartRate: {
+    type: Number,
+    default: 70
+  },
+  heartRateSd: {
+    type: Number,
+    default: 6
+  },
+  spo2Avg: {
+    type: Number,
+    default: 98
+  },
+  spo2Min: {
+    type: Number,
+    default: 96
+  },
+  skinTemp: {
+    type: Number,
+    default: 33.6
+  },
+  stepsToday: {
+    type: Number,
+    default: 0
+  },
+  sleepHours: {
+    type: Number,
+    default: 7.5
+  },
+  sleepEfficiency: {
+    type: Number,
+    default: 88
+  },
+  cardiacRisk: {
+    type: Number,
+    default: 0.003
+  },
+  respiratoryRisk: {
+    type: Number,
+    default: 0.008
+  },
+  feverRisk: {
+    type: Number,
+    default: 0.017
+  },
+  stressRisk: {
+    type: Number,
+    default: 0.027
+  },
+  metabolicRisk: {
+    type: Number,
+    default: 0.000
+  },
   source: {
     type: String,
     enum: ['google_fit', 'apple_health', 'mock_simulator'],

@@ -1,6 +1,7 @@
 const axios = require('axios');
 const VitalsHistory = require('../models/VitalsHistory');
 const ElderProfile = require('../models/ElderProfile');
+const { predictHealthRisks } = require('./diseasePredictor');
 
 /**
  * Synchronize Google Fit dataset for a single elder profile.
@@ -29,11 +30,44 @@ const syncElderGoogleFit = async (elderProfile) => {
       // Mock data generator for testing sync
       const mockHeartRate = Math.floor(Math.random() * (90 - 65 + 1)) + 65;
       const mockSteps = Math.floor(Math.random() * 150);
+
+      const rhr = mockHeartRate - Math.floor(Math.random() * 6 + 4);
+      const hrv = Math.floor(Math.random() * 4 + 4);
+      const spo2a = Math.floor(Math.random() * 3) + 97;
+      const spo2m = spo2a - Math.floor(Math.random() * 2);
+      const temp = Number((Math.random() * (34.0 - 33.5) + 33.5).toFixed(1));
+      const sleep = Number((Math.random() * (8.0 - 7.0) + 7.0).toFixed(1));
+      const eff = Math.floor(Math.random() * 10) + 85;
+
+      const predictions = await predictHealthRisks({
+        heartRate: mockHeartRate,
+        restingHeartRate: rhr,
+        heartRateSd: hrv,
+        spo2Avg: spo2a,
+        spo2Min: spo2m,
+        skinTemp: temp,
+        stepsToday: mockSteps,
+        sleepHours: sleep,
+        sleepEfficiency: eff
+      });
       
       const vitalRecord = await VitalsHistory.create({
         elderProfileId: elderProfile._id,
         heartRate: mockHeartRate,
         steps: mockSteps,
+        restingHeartRate: rhr,
+        heartRateSd: hrv,
+        spo2Avg: spo2a,
+        spo2Min: spo2m,
+        skinTemp: temp,
+        stepsToday: mockSteps,
+        sleepHours: sleep,
+        sleepEfficiency: eff,
+        cardiacRisk: predictions.cardiac,
+        respiratoryRisk: predictions.respiratory,
+        feverRisk: predictions.fever,
+        stressRisk: predictions.stress,
+        metabolicRisk: predictions.metabolic,
         source: 'google_fit',
         timestamp: new Date()
       });
@@ -74,10 +108,43 @@ const syncElderGoogleFit = async (elderProfile) => {
     }
 
     if (extractedHeartRate !== null) {
+      const rhr = extractedHeartRate - 6;
+      const hrv = 6;
+      const spo2a = 98;
+      const spo2m = 96;
+      const temp = 33.6;
+      const sleep = 7.5;
+      const eff = 88;
+
+      const predictions = await predictHealthRisks({
+        heartRate: extractedHeartRate,
+        restingHeartRate: rhr,
+        heartRateSd: hrv,
+        spo2Avg: spo2a,
+        spo2Min: spo2m,
+        skinTemp: temp,
+        stepsToday: extractedSteps,
+        sleepHours: sleep,
+        sleepEfficiency: eff
+      });
+
       const vitalRecord = await VitalsHistory.create({
         elderProfileId: elderProfile._id,
         heartRate: extractedHeartRate,
         steps: extractedSteps,
+        restingHeartRate: rhr,
+        heartRateSd: hrv,
+        spo2Avg: spo2a,
+        spo2Min: spo2m,
+        skinTemp: temp,
+        stepsToday: extractedSteps,
+        sleepHours: sleep,
+        sleepEfficiency: eff,
+        cardiacRisk: predictions.cardiac,
+        respiratoryRisk: predictions.respiratory,
+        feverRisk: predictions.fever,
+        stressRisk: predictions.stress,
+        metabolicRisk: predictions.metabolic,
         source: 'google_fit',
         timestamp: new Date()
       });
