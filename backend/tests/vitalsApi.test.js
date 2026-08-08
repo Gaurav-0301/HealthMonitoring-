@@ -2,6 +2,8 @@ const request = require('supertest');
 const mongoose = require('mongoose');
 const { MongoMemoryServer } = require('mongodb-memory-server');
 
+jest.setTimeout(60000);
+
 let mongoServer;
 let app;
 let jwtToken;
