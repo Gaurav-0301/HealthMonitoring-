@@ -20,7 +20,9 @@ beforeAll(async () => {
 
   // Seed demo accounts
   const seedRes = await request(app).post('/api/auth/seed-demo');
-  elderId = seedRes.body.elder._id;
+  const ElderProfile = require('../models/ElderProfile');
+  const elder = await ElderProfile.findOne({ name: 'Savitri Devi' });
+  elderId = seedRes.body?.elder?._id || elder?._id;
 
   // Login as demo family member
   const loginRes = await request(app)
