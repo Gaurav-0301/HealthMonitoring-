@@ -43,24 +43,21 @@ npm start
 
 ---
 
-## 🚀 Deployment Guide
+## 🚀 Active Deployed Links & Integration Guide
 
-### 1. Backend Deployment (Render)
-1. Push repository to GitHub.
-2. Log into [Render Dashboard](https://dashboard.render.com/) and click **New + -> Blueprint** (or **Web Service**).
-3. Connect your repository. Render will automatically detect `render.yaml`.
-4. Configure Environment Variables in Render:
-   - `MONGODB_URI`: Your MongoDB Atlas URI.
-   - `JWT_SECRET`: Random secret key.
-   - `FRONTEND_URL`: Your Vercel frontend URL (e.g. `https://healthmonitoring.vercel.app`).
-   - `DISEASE_PREDICTOR_API_KEY`: *(Optional)* API key for external disease predictor.
-5. Deploy Web Service. Your backend API will be live at `https://<your-render-service>.onrender.com/api`.
+* **Backend Live API**: `https://healthmonitoring-3cs6.onrender.com/api`
+* **Frontend Live Application**: `https://health-monitoring-git-main-gaurav-0301s-projects.vercel.app`
 
-### 2. Frontend Deployment (Vercel)
-1. Log into [Vercel Dashboard](https://vercel.com/) and click **Add New -> Project**.
-2. Import the GitHub repository.
-3. Set **Root Directory** to `frontend`.
-4. Add Environment Variable:
-   - `REACT_APP_API_URL` = `https://<your-render-service>.onrender.com/api`
-5. Click **Deploy**. Vercel will build and serve your SPA with routing pre-configured via `frontend/vercel.json`.
+---
+
+### 1. Backend Environment Setup (Render Dashboard)
+Configure the following in your [Render Service Environment Settings](https://dashboard.render.com/):
+- `FRONTEND_URL` = `https://health-monitoring-git-main-gaurav-0301s-projects.vercel.app`
+- `MONGODB_URI` = `mongodb+srv://<username>:<password>@cluster.mongodb.net/healthmonitoring?retryWrites=true&w=majority`
+- `JWT_SECRET` = `circleback_super_secret_jwt_key_2026`
+
+### 2. Frontend Environment Setup (Vercel Dashboard)
+Configure the following in your [Vercel Project Environment Settings](https://vercel.com/):
+- `REACT_APP_API_URL` = `https://healthmonitoring-3cs6.onrender.com/api`
+- `DISABLE_ESLINT_PLUGIN` = `true`
 
