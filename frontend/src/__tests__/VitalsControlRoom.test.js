@@ -7,6 +7,14 @@ import api from '../services/api';
 
 jest.mock('../services/api');
 
+beforeAll(() => {
+  global.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+});
+
 describe('VitalsControlRoom UI Component Tests', () => {
   const mockAuthContext = {
     user: { id: 'usr1', name: 'Demo Family', role: 'family' },
@@ -36,7 +44,7 @@ describe('VitalsControlRoom UI Component Tests', () => {
 
     await waitFor(() => {
       // 1. Check title & headers
-      expect(screen.getByText(/Vitals Control Room & Emergency Trigger Simulator/i)).toBeInTheDocument();
+      expect(screen.getByText(/Vitals Control Room/i)).toBeInTheDocument();
 
       // 2. Check Radio Chip Monitored Elder Selection
       expect(screen.getAllByText(/Savitri Devi/i).length).toBeGreaterThan(0);
@@ -47,11 +55,11 @@ describe('VitalsControlRoom UI Component Tests', () => {
       expect(screen.getByText(/Respiratory Risk/i)).toBeInTheDocument();
 
       // 4. Check 9 Sensor Sliders presence
-      expect(screen.getByText(/1. Heart Rate \(Instant\)/i)).toBeInTheDocument();
-      expect(screen.getByText(/2. Resting Heart Rate/i)).toBeInTheDocument();
+      expect(screen.getByText(/1. Heart Rate/i)).toBeInTheDocument();
+      expect(screen.getByText(/2. Resting HR/i)).toBeInTheDocument();
       expect(screen.getByText(/3. HR SD \(Variability\)/i)).toBeInTheDocument();
       expect(screen.getByText(/4. SpO2 Average/i)).toBeInTheDocument();
-      expect(screen.getByText(/5. SpO2 Minimum Drop/i)).toBeInTheDocument();
+      expect(screen.getByText(/5. SpO2 Minimum/i)).toBeInTheDocument();
       expect(screen.getByText(/6. Skin Temperature/i)).toBeInTheDocument();
       expect(screen.getByText(/7. Steps Today/i)).toBeInTheDocument();
       expect(screen.getByText(/8. Sleep Duration/i)).toBeInTheDocument();

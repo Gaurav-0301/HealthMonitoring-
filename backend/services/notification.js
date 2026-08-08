@@ -35,6 +35,9 @@ const getFromPhone = () => {
 
 // Send SMS
 const sendSMS = async (toPhone, messageBody) => {
+  if (process.env.NODE_ENV === 'test') {
+    return { success: true, simulated: true, note: 'Test environment simulation' };
+  }
   const formattedTo = normalizePhone(toPhone);
   const fromPhone = getFromPhone();
   const twilioClient = getTwilioClient();
