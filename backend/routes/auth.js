@@ -237,28 +237,33 @@ router.post('/seed-demo', async (req, res) => {
       await elder.save();
     }
 
-      // Medical History
-      await MedicalHistory.create({
-        elderProfileId: elder._id,
-        conditions: ['Hypertension (High BP)', 'Diabetes Mellitus (Type 2)', 'Arthritis'],
-        medications: [
-          { name: 'Amlodipine', dosage: '5mg daily morning' },
-          { name: 'Metformin', dosage: '500mg after dinner' }
-        ],
-        allergies: ['Penicillin / Amoxicillin'],
-        bloodGroup: 'B+',
-        doctorName: 'Dr. Anand Kumar (Cardiologist)',
-        doctorContact: '+91 98100 55443'
-      });
+      // Medical History (only if new medical history needed or upsert)
+      const existingMed = await MedicalHistory.findOne({ elderProfileId: elder._id });
+      if (!existingMed) {
+        await MedicalHistory.create({
+          elderProfileId: elder._id,
+          conditions: ['Hypertension (High BP)', 'Diabetes Mellitus (Type 2)', 'Arthritis'],
+          medications: [
+            { name: 'Amlodipine', dosage: '5mg daily morning' },
+            { name: 'Metformin', dosage: '500mg after dinner' }
+          ],
+          allergies: ['Penicillin / Amoxicillin'],
+          bloodGroup: 'B+',
+          doctorName: 'Dr. Anand Kumar (Cardiologist)',
+          doctorContact: '+91 98100 55443'
+        });
+      }
 
       // Initial baseline vitals history
-      const now = Date.now();
-      await VitalsHistory.insertMany([
-        { elderProfileId: elder._id, heartRate: 72, steps: 140, source: 'google_fit', timestamp: new Date(now - 45 * 60000) },
-        { elderProfileId: elder._id, heartRate: 75, steps: 90, source: 'google_fit', timestamp: new Date(now - 30 * 60000) },
-        { elderProfileId: elder._id, heartRate: 70, steps: 40, source: 'google_fit', timestamp: new Date(now - 15 * 60000) }
-      ]);
-    }
+      const vitalsCount = await VitalsHistory.countDocuments({ elderProfileId: elder._id });
+      if (vitalsCount === 0) {
+        const now = Date.now();
+        await VitalsHistory.insertMany([
+          { elderProfileId: elder._id, heartRate: 72, steps: 140, source: 'google_fit', timestamp: new Date(now - 45 * 60000) },
+          { elderProfileId: elder._id, heartRate: 75, steps: 90, source: 'google_fit', timestamp: new Date(now - 30 * 60000) },
+          { elderProfileId: elder._id, heartRate: 70, steps: 40, source: 'google_fit', timestamp: new Date(now - 15 * 60000) }
+        ]);
+      }
 
     res.json({
       message: 'CarePulse Demo accounts and Savitri Devi elder profile seeded successfully!',

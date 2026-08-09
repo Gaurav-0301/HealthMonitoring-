@@ -35,12 +35,31 @@ router.get('/active', authMiddleware, async (req, res) => {
 // POST /api/alerts/manual-sos - Trigger manual SOS button (Works on all tiers including Free Tier)
 router.post('/manual-sos', authMiddleware, async (req, res) => {
   try {
-    const { elderId, notes } = req.body;
+    const { elderId, notes, message } = req.body;
     const elder = await ElderProfile.findById(elderId);
     if (!elder) return res.status(404).json({ message: 'Elder profile not found' });
 
     console.log(`[MANUAL SOS BUTTON PRESSED] Elder: ${elder.name} (${elderId})`);
-    const alertLog = await triggerEscalation(elder._id, 'manual_sos', `Manual Emergency SOS Triggered by user/elder (${notes || 'Immediate assistance requested'})`);
+    const alertLog = await triggerEscalation(elder._id, 'manual_sos', `Manual Emergency SOS Triggered by user/elder (${notes || message || 'Immediate assistance requested'})`);
+
+    res.status(201).json({
+      message: 'EMERGENCY SOS ALERT ACTIVATED! Parallel escalation initiated.',
+      alertLog
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error triggering manual SOS', error: error.message });
+  }
+});
+
+// POST /api/alerts - Alias for POST /api/alerts/manual-sos
+router.post('/', authMiddleware, async (req, res) => {
+  try {
+    const { elderId, notes, message } = req.body;
+    const elder = await ElderProfile.findById(elderId);
+    if (!elder) return res.status(404).json({ message: 'Elder profile not found' });
+
+    console.log(`[MANUAL SOS BUTTON PRESSED] Elder: ${elder.name} (${elderId})`);
+    const alertLog = await triggerEscalation(elder._id, 'manual_sos', `Manual Emergency SOS Triggered by user/elder (${notes || message || 'Immediate assistance requested'})`);
 
     res.status(201).json({
       message: 'EMERGENCY SOS ALERT ACTIVATED! Parallel escalation initiated.',
